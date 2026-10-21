@@ -580,8 +580,8 @@ ul, dl, dd { margin: 0; padding: 0; list-style: none; }
 .profile-body { padding: 18px 16px 16px; }
 
 .avatar {
-  width: 84px;
-  height: 84px;
+  width: 96px;
+  height: 96px;
   display: grid;
   place-items: center;
   margin-bottom: 15px;
@@ -602,6 +602,16 @@ ul, dl, dd { margin: 0; padding: 0; list-style: none; }
   letter-spacing: -.02em;
   color: var(--ink);
 }
+
+img.avatar {
+  object-fit: cover;
+  background-image: none;
+  width: 96px;
+  height: 96px;
+  display: block;
+}
+
+.link-grid-single { grid-template-columns: 1fr; }
 
 .name { font-size: 24px; letter-spacing: -.01em; line-height: 1.2; }
 

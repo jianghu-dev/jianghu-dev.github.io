@@ -82,46 +82,34 @@ setTimeout(function () {
       <div class="panel-head"><span>PROFILE</span><span class="zh">个人信息</span><span class="idx"></span></div>
 
       <div class="profile-body">
-        <div class="avatar" aria-hidden="true"><span>JH</span></div>
+        <img class="avatar" src="assets/avatar.jpg" alt="江虎" />
 
         <!-- ✏️【改这里】名字、英文名、职位 -->
         <h1 class="name">江虎</h1>
         <p class="name-en">JIANG HU</p>
-        <p class="role">独立开发者 / 前端</p>
+        <p class="role">高三学生 / 自学前端</p>
 
         <!-- ✏️【改这里】两三行自我介绍 -->
         <p class="bio">
-          这里记录日常与正在做的事。写代码，做一些小工具，
-          偶尔拍照片。既是个人站点，也是我的工作台。
+          高三在读。白天做题，晚上写代码，偶尔拍照。
+          这里放我做过的小东西，也记录一个学生的折腾过程。
         </p>
       </div>
 
       <!-- ✏️【改这里】状态条文字，跑马灯效果 -->
       <div class="ticker"><div class="ticker-track">
-        <span>信号接收中 · RECEIVING · 当前在整理作品集 · 开放远程合作 ·</span>
-        <span aria-hidden="true">信号接收中 · RECEIVING · 当前在整理作品集 · 开放远程合作 ·</span>
+        <span>慢一点没关系，别停就行 · KEEP GOING · 高三备考中 ·</span>
+        <span aria-hidden="true">慢一点没关系，别停就行 · KEEP GOING · 高三备考中 ·</span>
       </div></div>
     </section>
 
     <section class="panel">
       <div class="panel-head"><span>LINKS</span><span class="zh">链接</span><span class="idx"></span></div>
-      <!-- ✏️【改这里】把 href 换成你自己的地址 -->
-      <div class="link-grid">
-        <a href="https://github.com/jianghu-dev" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.9 2.4 5.8 2.7 5.8 2.7a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.1c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
-          <span>GITHUB</span>
-        </a>
-        <a href="mailto:hi@example.com">
+      <!-- ✏️【改这里】邮箱地址 -->
+      <div class="link-grid link-grid-single">
+        <a href="mailto:aichicucumber@gmail.com">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/></svg>
-          <span>EMAIL</span>
-        </a>
-        <a href="https://github.com/jianghu-dev?tab=repositories" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H18a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5.5Z"/><path d="M8 4v16"/></svg>
-          <span>仓库</span>
-        </a>
-        <a href="contact.html">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg>
-          <span>联系</span>
+          <span>aichicucumber@gmail.com</span>
         </a>
       </div>
     </section>
@@ -234,9 +222,9 @@ setTimeout(function () {
       <!-- ✏️【改这里】右侧档案读数 -->
       <dl class="readout">
         <div><dt>坐标</dt><dd>杭州 / HANGZHOU</dd></div>
-        <div><dt>方向</dt><dd>前端 · 独立开发</dd></div>
-        <div><dt>开始</dt><dd>2019</dd></div>
-        <div><dt>状态</dt><dd><i class="live"></i>开放远程合作</dd></div>
+        <div><dt>身份</dt><dd>高三学生</dd></div>
+        <div><dt>开始</dt><dd>2023</dd></div>
+        <div><dt>状态</dt><dd><i class="live"></i>备考中 · 偶尔写代码</dd></div>
       </dl>
     </section>
 
@@ -244,10 +232,10 @@ setTimeout(function () {
       <div class="panel-head"><span>SKILLS</span><span class="zh">能力</span><span class="idx"></span></div>
       <!-- ✏️【改这里】技能条：改名字、数字，以及 --w 的百分比 -->
       <div class="bars">
-        <div class="bar"><span class="bar-name">HTML / CSS</span><span class="bar-val">85%</span><i style="--w:85%"></i></div>
-        <div class="bar"><span class="bar-name">JavaScript</span><span class="bar-val">70%</span><i style="--w:70%"></i></div>
-        <div class="bar"><span class="bar-name">Three.js</span><span class="bar-val">45%</span><i style="--w:45%"></i></div>
-        <div class="bar"><span class="bar-name">设计</span><span class="bar-val">60%</span><i style="--w:60%"></i></div>
+        <div class="bar"><span class="bar-name">HTML / CSS</span><span class="bar-val">70%</span><i style="--w:70%"></i></div>
+        <div class="bar"><span class="bar-name">JavaScript</span><span class="bar-val">55%</span><i style="--w:55%"></i></div>
+        <div class="bar"><span class="bar-name">Three.js</span><span class="bar-val">40%</span><i style="--w:40%"></i></div>
+        <div class="bar"><span class="bar-name">设计</span><span class="bar-val">35%</span><i style="--w:35%"></i></div>
       </div>
     </section>
 
@@ -255,8 +243,8 @@ setTimeout(function () {
       <div class="panel-head"><span>NOW</span><span class="zh">最近</span><span class="idx"></span></div>
       <!-- ✏️【改这里】进行中的事：class="done" 表示已勾上 -->
       <ul class="now">
-        <li class="done"><span class="box"></span>把主页重做成三栏布局</li>
-        <li class="done"><span class="box"></span>绑定自己的域名</li>
+        <li class="done"><span class="box"></span>把主页拆成五个独立页面</li>
+        <li class="done"><span class="box"></span>换成自己的头像和邮箱</li>
         <li><span class="box"></span>整理旧作品，逐个搬上来</li>
         <li><span class="box"></span>学 WebGL 着色器</li>
       </ul>
@@ -285,7 +273,7 @@ setTimeout(function () {
     <span class="mono dim">BUILT WITH PLAIN HTML · HOSTED ON GITHUB PAGES</span>
   </div>
   <div class="footer-right">
-    <a href="mailto:hi@example.com" class="mono">hi@example.com</a>
+    <a href="mailto:aichicucumber@gmail.com" class="mono">aichicucumber@gmail.com</a>
     <a href="contact.html" class="mono dim">联系我 →</a>
   </div>
 </footer>

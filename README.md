@@ -1,6 +1,6 @@
 # 个人主页 · GitHub Pages
 
-五个独立页面的个人站：**主页 / 关于 / 作品 / 动态 / 联系**。极简黑白 + 测绘仪表风。
+五个独立页面的个人站：**主页 / 关于 / 作品 / 动态 / 联系**。极简黑白 + 测绘仪表风。  
 零依赖：纯 HTML + CSS + JS，不需要构建、不需要 Node。改完推上去就是线上版本。
 
 ```
@@ -33,13 +33,13 @@ https://github.com/jianghu-dev/jianghu-dev.github.io
 
 ### 第 2 步 · 点开你要改的那个页面
 
-| 想改什么 | 打开哪个文件 |
-|---|---|
-| 主页的自我介绍、链接、最近的动态 | `index.html` |
-| 关于页的经历、时间线、技能 | `about.html` |
-| 作品列表 | `work.html` |
-| 更新记录 | `updates.html` |
-| 联系方式、邮箱 | `contact.html` |
+| 想改什么             | 打开哪个文件         |
+| ---------------- | -------------- |
+| 主页的自我介绍、链接、最近的动态 | `index.html`   |
+| 关于页的经历、时间线、技能    | `about.html`   |
+| 作品列表             | `work.html`    |
+| 更新记录             | `updates.html` |
+| 联系方式、邮箱          | `contact.html` |
 
 ### 第 3 步 · 点右上角的铅笔图标
 
@@ -50,7 +50,6 @@ https://github.com/jianghu-dev/jianghu-dev.github.io
 全文一共 **37 处**标记，页面里有多少就是多少。格式长这样：
 
 ```html
-<!-- ✏️【改这里】名字、英文名、职位 -->
 ```
 
 **注释是给你看的提示，不用改，也不用删。**
@@ -71,7 +70,7 @@ https://github.com/jianghu-dev/jianghu-dev.github.io
 
 ### 第 7 步 · 看结果
 
-等 1 分钟，打开 https://jianghu-dev.github.io/ ，按 `Command + Shift + R` 强制刷新。
+等 1 分钟，打开 <https://jianghu-dev.github.io/> ，按 `Command + Shift + R` 强制刷新。
 
 ### 改坏了怎么退回去
 
@@ -87,19 +86,19 @@ https://github.com/jianghu-dev/jianghu-dev.github.io
 
 **index.html 主页** — 三栏总览
 
-| 卡片 | 内容 |
-|---|---|
-| PROFILE | 头像字母、姓名、英文名、职位、自我介绍、底部跑马灯 |
-| LINKS | 4 个链接按钮 |
-| TAGS | 关键词标签 |
-| SITE | 版本、上线日期、托管方式 |
-| NOTE | 一句话引言（逐字浮现） |
-| UPDATES | 最近 4 条动态 + 「查看全部」 |
-| GALLERY | 4 格精选作品 + 「查看全部」 |
-| MANIFEST | 坐标、方向、开始年份、状态 |
-| SKILLS | 技能条 |
-| NOW | 待办清单 |
-| TOOLS | 常用工具 |
+| 卡片       | 内容                        |
+| -------- | ------------------------- |
+| PROFILE  | 头像字母、姓名、英文名、职位、自我介绍、底部跑马灯 |
+| LINKS    | 4 个链接按钮                   |
+| TAGS     | 关键词标签                     |
+| SITE     | 版本、上线日期、托管方式              |
+| NOTE     | 一句话引言（逐字浮现）               |
+| UPDATES  | 最近 4 条动态 + 「查看全部」         |
+| GALLERY  | 4 格精选作品 + 「查看全部」          |
+| MANIFEST | 坐标、方向、开始年份、状态             |
+| SKILLS   | 技能条                       |
+| NOW      | 待办清单                      |
+| TOOLS    | 常用工具                      |
 
 **about.html 关于** — 左栏 PROFILE / TAGS / TOOLS，右栏 NOTE / TIMELINE / SKILLS
 
@@ -140,11 +139,11 @@ python3 -m http.server 8000
 
 ## 4. 已上线
 
-| 项 | 值 |
-|---|---|
-| 站点 | https://jianghu-dev.github.io/ |
-| 仓库 | https://github.com/jianghu-dev/jianghu-dev.github.io |
-| 分支 / 目录 | `main` / 根目录，Pages 已自动启用 |
+| 项         | 值                                                             |
+| --------- | ------------------------------------------------------------- |
+| 站点        | <https://jianghu-dev.github.io/>                              |
+| 仓库        | <https://github.com/jianghu-dev/jianghu-dev.github.io>        |
+| 分支 / 目录   | `main` / 根目录，Pages 已自动启用                                      |
 | 本机 Git 身份 | 江虎 · `345785505+jianghu-dev@users.noreply.github.com`（只配在本仓库） |
 
 ### 更新内容
@@ -168,32 +167,32 @@ gh auth login --hostname github.com --git-protocol https --web
 
 全在 `assets/style.css` 顶部的 `:root` 里，五个页面同时生效。
 
-| 变量 | 作用 | 默认值 |
-|---|---|---|
-| `--bg` | 页面底色 | `#f8f9fa` |
-| `--ink` | 主墨色 | `#0a0a0a` |
-| `--panel` | 卡片底色 | `rgba(255,255,255,.88)` |
-| `--max` | 内容最大宽度 | `1240px` |
-| `--gap` | 卡片间距 | `14px` |
+| 变量        | 作用     | 默认值                     |
+| --------- | ------ | ----------------------- |
+| `--bg`    | 页面底色   | `#f8f9fa`               |
+| `--ink`   | 主墨色    | `#0a0a0a`               |
+| `--panel` | 卡片底色   | `rgba(255,255,255,.88)` |
+| `--max`   | 内容最大宽度 | `1240px`                |
+| `--gap`   | 卡片间距   | `14px`                  |
 
-**三栏宽度**在 `.layout` 的 `grid-template-columns`；**作品网格**在 `.work-grid`。
-**深色模式**是同一组变量在 `:root[data-theme="dark"]` 下的覆盖值。
+**三栏宽度**在 `.layout` 的 `grid-template-columns`；**作品网格**在 `.work-grid`。  
+**深色模式**是同一组变量在 `:root[data-theme="dark"]` 下的覆盖值。  
 **网格底纹**密度在 `.bg-grid` 的 `background-size`。
 
 ---
 
 ## 6. 动画说明
 
-| 位置 | 效果 |
-|---|---|
+| 位置   | 效果                                                       |
+| ---- | -------------------------------------------------------- |
 | 打开主页 | 终端日志逐行打印，显示 `[ENTER] 按回车进入站点`，**按回车（或点一下）才进入**。其他页面没有这一步 |
-| 鼠标 | 四角准星跟随，移到链接/按钮上会吸附并框住 |
-| 卡片 | 滚动到视口时依次淡入 |
-| 引言 | 逐字浮现，每字 0.045 秒 |
-| 卡片 | 悬停时一条细线从上扫到下 |
-| 页面顶部 | 2px 进度条 |
+| 鼠标   | 四角准星跟随，移到链接/按钮上会吸附并框住                                    |
+| 卡片   | 滚动到视口时依次淡入                                               |
+| 引言   | 逐字浮现，每字 0.045 秒                                          |
+| 卡片   | 悬停时一条细线从上扫到下                                             |
+| 页面顶部 | 2px 进度条                                                  |
 
-**改启动日志**：`assets/main.js` 里的 `BOOT_LINES`，一行一个 `['标签', '内容']`。
+**改启动日志**：`assets/main.js` 里的 `BOOT_LINES`，一行一个 `['标签', '内容']`。  
 **关掉全部动画**：系统设置 → 辅助功能 → 显示 → 打开「减弱动态效果」。
 
 **两道保护**：`main.js` 没跑起来时 3 秒后自动显示内容；浏览器禁 JS 时遮罩不出现。
