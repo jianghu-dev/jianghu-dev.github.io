@@ -99,8 +99,8 @@
     ctx.lineWidth = 1;
     ctx.lineCap = 'round';
     ctx.strokeStyle = staticFrame
-      ? 'rgba(110, 240, 160, 0.17)'
-      : 'rgba(110, 240, 160, 0.175)';
+      ? 'rgba(255, 255, 255, 0.12)'
+      : 'rgba(255, 255, 255, 0.125)';
 
     for (var k = 0; k < LEVELS; k++) {
       var level = BASE + k * STEP;

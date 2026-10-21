@@ -7,21 +7,21 @@
 :root {
   color-scheme: dark;
 
-  --bg: #070c09;
-  --panel: rgba(13, 24, 18, .88);
-  --panel-solid: #0d1812;
-  --ink: #6ef0a0;
-  --ink-1: #d9f6e4;
-  --ink-2: #a9dabd;
-  --ink-3: #6f9b83;
-  --ink-4: #47685a;
-  --line: rgba(110, 240, 160, .16);
-  --line-soft: rgba(110, 240, 160, .085);
-  --grid: rgba(110, 240, 160, .062);
-  --hover: rgba(110, 240, 160, .07);
-  --inv: #06100a;
-  --tick-bg: #5eeb94;
-  --tick-fg: #06100a;
+  --bg: #0a0a0a;
+  --panel: rgba(22, 22, 22, .88);
+  --panel-solid: #161616;
+  --ink: #f9fafb;
+  --ink-1: #f3f4f6;
+  --ink-2: #d1d5db;
+  --ink-3: #9ca3af;
+  --ink-4: #6b7280;
+  --line: rgba(255, 255, 255, .1);
+  --line-soft: rgba(255, 255, 255, .06);
+  --grid: rgba(255, 255, 255, .04);
+  --hover: rgba(255, 255, 255, .05);
+  --inv: #0a0a0a;
+  --tick-bg: #1f2937;
+  --tick-fg: #0a0a0a;
 
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "JetBrains Mono", monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -29,7 +29,7 @@
   --r: 10px;
   --gap: 14px;
   --max: 1240px;
-  --shadow: 0 4px 26px -2px rgba(0, 0, 0, .6), 0 0 0 1px rgba(110, 240, 160, .03);
+  --shadow: 0 4px 26px -2px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .03);
   --ease: cubic-bezier(.22, .61, .36, 1);
 }
 
@@ -200,9 +200,9 @@ ul, dl, dd { margin: 0; padding: 0; list-style: none; }
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(5, 12, 8, .92) 0%,
-    rgba(6, 16, 10, .46) 46%,
-    rgba(6, 14, 9, .8) 80%,
+    rgba(10, 10, 10, .9) 0%,
+    rgba(10, 10, 10, .42) 46%,
+    rgba(10, 10, 10, .78) 80%,
     var(--bg) 100%
   );
 }
@@ -1127,7 +1127,7 @@ img.avatar:hover { filter: saturate(1.15) brightness(1.12); }
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  background: #050b07;
+  background: #0a0a0a;
   color: var(--ink);
   font-family: var(--mono);
   transition: opacity .5s var(--ease), transform .5s var(--ease);
@@ -1144,8 +1144,8 @@ html.boot-off .boot { display: none; }
   align-items: center;
   gap: 10px;
   padding: 11px 16px;
-  background: #0a120d;
-  border-bottom: 1px solid rgba(110, 240, 160, .18);
+  background: #141414;
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
   font-size: 10px;
   letter-spacing: .14em;
   color: var(--ink-4);
@@ -1155,7 +1155,7 @@ html.boot-off .boot { display: none; }
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #1e3a28;
+  background: #3a3a3a;
 }
 .boot-dots i:first-child { background: var(--ink); }
 .boot-title { color: var(--ink-2); letter-spacing: .08em; }
@@ -1219,9 +1219,9 @@ html.boot-off .boot { display: none; }
 }
 .boot-ready .k {
   padding: 2px 9px;
-  border: 1px solid rgba(110, 240, 160, .4);
+  border: 1px solid rgba(255, 255, 255, .35);
   border-radius: 3px;
-  background: rgba(110, 240, 160, .1);
+  background: rgba(255, 255, 255, .08);
   font-size: 10px;
   letter-spacing: .14em;
   animation: keyPulse 1.7s ease-in-out infinite;
@@ -1231,7 +1231,7 @@ html.boot-off .boot { display: none; }
   to   { opacity: 1; transform: none; }
 }
 @keyframes keyPulse {
-  0%, 100% { border-color: rgba(110, 240, 160, .3); color: var(--ink-3); }
+  0%, 100% { border-color: rgba(255, 255, 255, .25); color: var(--ink-3); }
   50%      { border-color: var(--ink); color: var(--ink); }
 }
 
