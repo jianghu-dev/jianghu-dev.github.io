@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EPUB 封面工坊 - 在线电子书封面替换工具</title>
+  <!-- 引入 Tailwind CSS 样式库 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 JSZip 库进行客户端解压缩 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- 引入 Lucide 图标库 -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f7ff',
+              100: '#ebf0fe',
+              200: '#ced9fd',
+              500: '#4f46e5',
+              600: '#4338ca',
+              700: '#3730a3',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+    body {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.03);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.4);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(107, 114, 128, 0.6);
+    }
+    .pattern-bg {
+      background-image: radial-gradient(rgba(99, 102, 241, 0.08) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pattern-bg antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- 顶部导航栏 -->
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <i data-lucide="book-marked" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-900 leading-tight flex items-center gap-2">
+            EPUB 封面工坊
+            <span class="text-xs bg-indigo-50 text-indigo-600 font-semibold px-2 py-0.5 rounded-full border border-indigo-200/60">EPUB 2 / 3 全兼容</span>
+          </h1>
+          <p class="text-xs text-slate-500">纯本地浏览器处理 · 隐私零上传</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <button id="btn-create-sample" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200/80 transition shadow-sm active:scale-95" title="无需自己找文件，快速体验替换效果">
+          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
+          <span class="hidden sm:inline">生成测试样本</span>
+          <span class="sm:hidden">测试样本</span>
+        </button>
+        <button id="btn-show-help" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition" title="使用说明与格式标准">
+          <i data-lucide="help-circle" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主体工作区 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+    <!-- 流程步骤指引条 -->
+    <div class="grid grid-cols-3 gap-2 sm:gap-4 p-1.5 bg-slate-200/60 backdrop-blur rounded-2xl max-w-3xl mx-auto text-center text-xs sm:text-sm font-medium">
+      <div id="step-tab-1" class="py-2 px-3 rounded-xl bg-white text-indigo-700 shadow-sm flex items-center justify-center gap-2 font-semibold transition">
+        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span>
+        <span>上传 EPUB 图书</span>
+      </div>
+      <div id="step-tab-2" class="py-2 px-3 rounded-xl text-slate-600 flex items-center justify-center gap-2 transition">
+        <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center">2</span>
+        <span>上传新封面</span>
+      </div>
+      <div id="step-tab-3" class="py-2 px-3 rounded-xl text-slate-600 flex items-center justify-center gap-2 transition">
+        <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center">3</span>
+        <span>预览与导出</span>
+      </div>
+    </div>
+
+    <!-- 上传卡片栅格 (左：EPUB / 右：新封面) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- 左侧：EPUB 电子书解析卡片 -->
+      <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 flex flex-col justify-between transition hover:shadow-md">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+              </span>
+              原 EPUB 电子书
+            </h2>
+            <span id="epub-status-tag" class="text-xs px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full font-medium">
+              未载入文件
+            </span>
+          </div>
+
+          <!-- 拖拽上传区 -->
+          <div id="epub-drop-zone" class="relative group border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-50/50 hover:bg-indigo-50/20">
+            <input type="file" id="epub-file-input" accept=".epub" class="hidden">
+            <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+              <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition transform">
+                <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+              </div>
+              <p class="text-sm font-semibold text-slate-800">
+                点击选择或将 <span class="text-indigo-600">.epub</span> 文件拖拽至此
+              </p>
+              <p class="text-xs text-slate-400">支持 EPUB 2.0 / 3.0 / 3.2 规范书籍</p>
+            </div>
+          </div>
+
+          <!-- 电子书元信息与原封面详情展示面板 (默认隐藏) -->
+          <div id="epub-info-panel" class="hidden mt-5 pt-4 border-t border-slate-100 space-y-4">
+            <div class="flex gap-4 items-start">
+              <!-- 原封面小缩略图 -->
+              <div class="relative w-24 sm:w-28 aspect-[2/3] rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0 shadow-sm group">
+                <img id="original-cover-img" src="" alt="原图书封面" class="w-full h-full object-cover hidden">
+                <div id="original-cover-placeholder" class="w-full h-full flex flex-col items-center justify-center p-2 text-center text-slate-400">
+                  <i data-lucide="image-off" class="w-6 h-6 mb-1 text-slate-300"></i>
+                  <span class="text-[10px] leading-tight">未探测到原封面</span>
+                </div>
+                <div class="absolute bottom-1 left-1 right-1 bg-black/60 backdrop-blur-xs text-white text-[10px] py-0.5 px-1 rounded text-center truncate">
+                  原封面
+                </div>
+              </div>
+
+              <!-- 元数据字段列表 -->
+              <div class="flex-1 min-w-0 space-y-1.5 text-xs">
+                <div>
+                  <span class="text-slate-400">书名：</span>
+                  <span id="meta-title" class="font-bold text-slate-800 text-sm truncate block">-</span>
+                </div>
+                <div>
+                  <span class="text-slate-400">创作者/作者：</span>
+                  <span id="meta-creator" class="text-slate-700 font-medium">-</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-slate-600">
+                  <div>
+                    <span class="text-slate-400">出版社：</span>
+                    <span id="meta-publisher" class="truncate block">-</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400">语言：</span>
+                    <span id="meta-language">-</span>
+                  </div>
+                </div>
+                <div>
+                  <span class="text-slate-400">规范版本：</span>
+                  <span id="meta-version" class="font-mono text-indigo-600 font-semibold bg-indigo-50 px-1.5 py-0.5 rounded text-[11px]">-</span>
+                </div>
+                <div class="text-[11px] text-slate-400 truncate">
+                  原封面路径: <code id="meta-cover-path" class="text-slate-600 bg-slate-100 px-1 rounded">-</code>
+                </div>
+              </div>
+            </div>
+
+            <!-- 统计摘要 -->
+            <div class="flex items-center justify-between text-xs bg-slate-50 px-3 py-2 rounded-lg text-slate-500">
+              <span id="meta-filesize">文件大小: -</span>
+              <span id="meta-itemscount">资源总数: -</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 flex justify-between items-center text-xs text-slate-400">
+          <span>文件仅保存在本地内存中</span>
+          <button id="btn-clear-epub" class="hidden text-rose-500 hover:text-rose-700 font-medium hover:underline">
+            移除此书
+          </button>
+        </div>
+      </section>
+
+      <!-- 右侧：新封面图像选择卡片 -->
+      <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-6 flex flex-col justify-between transition hover:shadow-md">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="p-1.5 bg-violet-50 text-violet-600 rounded-lg">
+                <i data-lucide="image" class="w-4 h-4"></i>
+              </span>
+              新封面图片
+            </h2>
+            <span id="cover-status-tag" class="text-xs px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full font-medium">
+              未选择新图
+            </span>
+          </div>
+
+          <!-- 拖拽上传区 -->
+          <div id="cover-drop-zone" class="relative group border-2 border-dashed border-slate-300 hover:border-violet-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-50/50 hover:bg-violet-50/20">
+            <input type="file" id="cover-file-input" accept="image/jpeg,image/png,image/webp,image/jpg" class="hidden">
+            <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+              <div class="w-12 h-12 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center group-hover:scale-110 transition transform">
+                <i data-lucide="image-plus" class="w-6 h-6"></i>
+              </div>
+              <p class="text-sm font-semibold text-slate-800">
+                点击选择或将新封面图片拖拽至此
+              </p>
+              <p class="text-xs text-slate-400">支持 JPG, PNG, WEBP (建议比例 1:1.4 ~ 1:1.6)</p>
+            </div>
+          </div>
+
+          <!-- 快捷预设封面选取 (方便用户没有准备图片时直接选用) -->
+          <div class="mt-4">
+            <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
+              <span>没有现成图片？选用精选预设模板：</span>
+            </div>
+            <div class="grid grid-cols-4 gap-2">
+              <button data-preset="minimal" class="preset-btn px-2 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-500 text-xs text-slate-700 bg-slate-50 hover:bg-indigo-50/40 transition flex items-center justify-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 极简金石
+              </button>
+              <button data-preset="cyber" class="preset-btn px-2 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-500 text-xs text-slate-700 bg-slate-50 hover:bg-indigo-50/40 transition flex items-center justify-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> 赛博霓虹
+              </button>
+              <button data-preset="nature" class="preset-btn px-2 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-500 text-xs text-slate-700 bg-slate-50 hover:bg-indigo-50/40 transition flex items-center justify-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 森林森系
+              </button>
+              <button data-preset="dark" class="preset-btn px-2 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-500 text-xs text-slate-700 bg-slate-50 hover:bg-indigo-50/40 transition flex items-center justify-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-800"></span> 典雅深邃
+              </button>
+            </div>
+          </div>
+
+          <!-- 新封面信息面板 -->
+          <div id="new-cover-info-panel" class="hidden mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-14 bg-slate-100 rounded border overflow-hidden">
+                <img id="new-cover-thumb" class="w-full h-full object-cover" alt="新封面缩略图">
+              </div>
+              <div>
+                <p id="new-cover-filename" class="font-medium text-slate-800 truncate max-w-[180px]">-</p>
+                <p id="new-cover-dims" class="text-slate-400">分辨率: -</p>
+              </div>
+            </div>
+            <div id="new-cover-filesize" class="text-slate-500 bg-slate-100 px-2 py-1 rounded">
+              -
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 flex justify-between items-center text-xs text-slate-400">
+          <span>将被自动置入 EPUB 规范清单中</span>
+          <button id="btn-clear-cover" class="hidden text-rose-500 hover:text-rose-700 font-medium hover:underline">
+            清除新封面
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 替换对比与高级配置区域 -->
+    <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sm:p-7">
+      <div class="flex flex-col md:flex-row md:items-center justify-between pb-5 border-b border-slate-100 gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="split" class="w-5 h-5 text-indigo-600"></i>
+            封面替换对比预览
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">直观比对电子书阅读器中的呈现效果</p>
+        </div>
+
+        <!-- 转换选项与配置 -->
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="inline-flex items-center gap-2 text-xs text-slate-700 font-medium cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/80 hover:bg-slate-100">
+            <input type="checkbox" id="opt-convert-jpeg" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300">
+            <span>统一转换为兼容型 JPEG 格式</span>
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-700 font-medium cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/80 hover:bg-slate-100">
+            <input type="checkbox" id="opt-update-html" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300">
+            <span>同步更新封面引导页 (HTML/SVG)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 双封面画廊对比 -->
+      <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-8 items-center justify-items-center max-w-2xl mx-auto py-2">
+
+        <!-- 左：原封面 -->
+        <div class="flex flex-col items-center space-y-3 w-full max-w-[240px]">
+          <div class="relative w-full aspect-[1/1.5] rounded-xl bg-slate-100 border-2 border-slate-200 shadow-md overflow-hidden flex items-center justify-center transition">
+            <img id="preview-original-img" src="" alt="原封面" class="w-full h-full object-cover hidden">
+            <div id="preview-original-empty" class="p-6 text-center text-slate-400 flex flex-col items-center">
+              <i data-lucide="book-open" class="w-10 h-10 mb-2 stroke-1 text-slate-300"></i>
+              <span class="text-xs">等待载入 EPUB</span>
+            </div>
+            <div class="absolute top-2 left-2 bg-slate-900/70 backdrop-blur-md text-white text-[11px] font-semibold px-2 py-0.5 rounded-md">
+              替换前 (原版)
+            </div>
+          </div>
+          <span class="text-xs text-slate-500 font-medium" id="preview-original-label">原文件</span>
+        </div>
+
+        <!-- 右：新封面 (替换后) -->
+        <div class="flex flex-col items-center space-y-3 w-full max-w-[240px]">
+          <div class="relative w-full aspect-[1/1.5] rounded-xl bg-slate-100 border-2 border-dashed border-indigo-400 shadow-lg shadow-indigo-100/60 overflow-hidden flex items-center justify-center transition">
+            <img id="preview-new-img" src="" alt="新封面" class="w-full h-full object-cover hidden">
+            <div id="preview-new-empty" class="p-6 text-center text-slate-400 flex flex-col items-center">
+              <i data-lucide="sparkles" class="w-10 h-10 mb-2 stroke-1 text-indigo-300"></i>
+              <span class="text-xs">等待选择新封面</span>
+            </div>
+            <div class="absolute top-2 left-2 bg-indigo-600/90 backdrop-blur-md text-white text-[11px] font-semibold px-2 py-0.5 rounded-md shadow-sm">
+              替换后 (新版)
+            </div>
+          </div>
+          <span class="text-xs text-indigo-600 font-medium" id="preview-new-label">准备就绪</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 可折叠的元数据微调面板 (书名、作者等选填项) -->
+    <details class="group bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition">
+      <summary class="px-6 py-4 cursor-pointer font-medium text-sm text-slate-700 flex items-center justify-between hover:bg-slate-50 select-none">
+        <span class="flex items-center gap-2">
+          <i data-lucide="edit-3" class="w-4 h-4 text-slate-500"></i>
+          <span>图书元数据微调 (可选，支持同时修正书名/作者)</span>
+        </span>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition transform"></i>
+      </summary>
+      <div class="px-6 pb-6 pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">书籍名称 (Title)</label>
+          <input type="text" id="edit-title" placeholder="保持原样" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">主要作者 (Author/Creator)</label>
+          <input type="text" id="edit-creator" placeholder="保持原样" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">出版机构 (Publisher)</label>
+          <input type="text" id="edit-publisher" placeholder="保持原样" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">语言代码 (Language Code)</label>
+          <input type="text" id="edit-language" placeholder="zh-CN" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+        </div>
+      </div>
+    </details>
+
+    <!-- 底部操作与导出栏 -->
+    <div class="sticky bottom-4 z-30 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3 text-sm text-slate-600">
+        <div id="export-status-icon" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+          <i data-lucide="info" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <p id="export-status-text" class="font-medium text-slate-800 leading-tight">请先上传 EPUB 文件和一张新封面</p>
+          <p id="export-status-sub" class="text-xs text-slate-400">完成后即可一键合成标准 EPUB 书籍</p>
+        </div>
+      </div>
+
+      <!-- 操作按钮群 -->
+      <div class="flex items-center space-x-3 w-full sm:w-auto">
+        <button id="btn-process-download" disabled class="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-semibold text-sm shadow-md shadow-indigo-200 flex items-center justify-center space-x-2 transition active:scale-95">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>替换封面并下载 EPUB</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 运行日志折叠抽屉 -->
+    <div class="pt-2">
+      <button id="toggle-log-btn" class="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 font-mono">
+        <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+        <span>查看内部解析与替换日志</span>
+      </button>
+      <div id="log-container" class="hidden mt-2 p-3 bg-slate-900 text-slate-300 font-mono text-[11px] rounded-xl max-h-48 overflow-y-auto custom-scrollbar space-y-1">
+        <div class="text-slate-500">// 引擎就绪，等待输入任务...</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 帮助说明模态窗 -->
+  <div id="help-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+          <i data-lucide="book" class="w-5 h-5 text-indigo-600"></i>
+          EPUB 封面替换原理与兼容规范
+        </h3>
+        <button id="close-help-btn" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="text-xs leading-relaxed text-slate-600 space-y-3">
+        <p>
+          本工具严格遵循 IDPF / W3C EPUB 规范，全面兼顾各类新老主流电子书设备（如 Kindle, Apple Books, 掌阅 iReader, Kobo, 微信读书等）：
+        </p>
+        <ul class="list-disc pl-5 space-y-1 text-slate-700">
+          <li><strong>EPUB 3 规范：</strong>自动在 <code class="bg-slate-100 text-indigo-600 px-1 py-0.5 rounded">&lt;manifest&gt;</code> 清单项中标记 <code class="bg-slate-100 px-1 rounded">properties="cover-image"</code>。</li>
+          <li><strong>EPUB 2 规范：</strong>自动维护 <code class="bg-slate-100 text-indigo-600 px-1 py-0.5 rounded">&lt;metadata&gt;</code> 中的 <code class="bg-slate-100 px-1 rounded">&lt;meta name="cover" content="..."/&gt;</code> 引用。</li>
+          <li><strong>引导页同步：</strong>若图书包含独立的 <code class="bg-slate-100 px-1 rounded">titlepage.xhtml</code> 或封面引导页，将同步更新对应图片链接。</li>
+          <li><strong>Mimetype 安全：</strong>保存时保持第一个文件 <code class="bg-slate-100 px-1 rounded">mimetype</code> 不做压缩且位于首位，确保符合 ZIP 打包检测标准。</li>
+        </ul>
+        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-indigo-900">
+          <p class="font-semibold mb-1">💡 最佳效果建议：</p>
+          <p>封面分辨率建议不低于 <strong>1200 x 1800 像素</strong>，比例在 <strong>1:1.5</strong> 左右，高分辨率可在高分屏（如 iPad Retina）上获得最细腻的观感。</p>
+        </div>
+      </div>
+      <div class="pt-2 text-right">
+        <button id="btn-close-help-confirm" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition">
+          我知道了
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 轻量 Toast 提示条容器 (避免使用系统原生 alert) -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- 页脚 -->
+  <footer class="mt-auto border-t border-slate-200/80 bg-white py-4 text-center text-xs text-slate-400">
+    <p>© 2026 EPUB 封面工坊 · 本地纯净运行 · 保护您的电子书版权与个人隐私</p>
+  </footer>
+
+  <script>
+    // 初始化 Lucide 图标
+    lucide.createIcons();
+
+    // 全局状态管理
+    const state = {
+      epubFile: null,
+      epubZip: null,
+      opfPath: null,
+      opfDoc: null,
+      originalCoverBlob: null,
+      originalCoverPath: null,
+      originalCoverItem: null,
+      metadata: {
+        title: '',
+        creator: '',
+        publisher: '',
+        language: '',
+        version: '3.0'
+      },
+      newCoverFile: null,
+      newCoverBlob: null,
+      newCoverType: 'image/jpeg',
+      newCoverDimensions: { width: 0, height: 0 }
+    };
+
+    // DOM 元素引用
+    const el = {
+      epubInput: document.getElementById('epub-file-input'),
+      epubDropZone: document.getElementById('epub-drop-zone'),
+      epubStatusTag: document.getElementById('epub-status-tag'),
+      epubInfoPanel: document.getElementById('epub-info-panel'),
+      originalCoverImg: document.getElementById('original-cover-img'),
+      originalCoverPlaceholder: document.getElementById('original-cover-placeholder'),
+      metaTitle: document.getElementById('meta-title'),
+      metaCreator: document.getElementById('meta-creator'),
+      metaPublisher: document.getElementById('meta-publisher'),
+      metaLanguage: document.getElementById('meta-language'),
+      metaVersion: document.getElementById('meta-version'),
+      metaCoverPath: document.getElementById('meta-cover-path'),
+      metaFilesize: document.getElementById('meta-filesize'),
+      metaItemscount: document.getElementById('meta-itemscount'),
+      btnClearEpub: document.getElementById('btn-clear-epub'),
+
+      coverInput: document.getElementById('cover-file-input'),
+      coverDropZone: document.getElementById('cover-drop-zone'),
+      coverStatusTag: document.getElementById('cover-status-tag'),
+      newCoverInfoPanel: document.getElementById('new-cover-info-panel'),
+      newCoverThumb: document.getElementById('new-cover-thumb'),
+      newCoverFilename: document.getElementById('new-cover-filename'),
+      newCoverDims: document.getElementById('new-cover-dims'),
+      newCoverFilesize: document.getElementById('new-cover-filesize'),
+      btnClearCover: document.getElementById('btn-clear-cover'),
+
+      previewOriginalImg: document.getElementById('preview-original-img'),
+      previewOriginalEmpty: document.getElementById('preview-original-empty'),
+      previewOriginalLabel: document.getElementById('preview-original-label'),
+      previewNewImg: document.getElementById('preview-new-img'),
+      previewNewEmpty: document.getElementById('preview-new-empty'),
+      previewNewLabel: document.getElementById('preview-new-label'),
+
+      optConvertJpeg: document.getElementById('opt-convert-jpeg'),
+      optUpdateHtml: document.getElementById('opt-update-html'),
+
+      editTitle: document.getElementById('edit-title'),
+      editCreator: document.getElementById('edit-creator'),
+      editPublisher: document.getElementById('edit-publisher'),
+      editLanguage: document.getElementById('edit-language'),
+
+      btnProcessDownload: document.getElementById('btn-process-download'),
+      exportStatusIcon: document.getElementById('export-status-icon'),
+      exportStatusText: document.getElementById('export-status-text'),
+      exportStatusSub: document.getElementById('export-status-sub'),
+
+      btnCreateSample: document.getElementById('btn-create-sample'),
+      btnShowHelp: document.getElementById('btn-show-help'),
+      helpModal: document.getElementById('help-modal'),
+      closeHelpBtn: document.getElementById('close-help-btn'),
+      btnCloseHelpConfirm: document.getElementById('btn-close-help-confirm'),
+
+      logContainer: document.getElementById('log-container'),
+      toggleLogBtn: document.getElementById('toggle-log-btn'),
+      toastContainer: document.getElementById('toast-container'),
+
+      stepTab1: document.getElementById('step-tab-1'),
+      stepTab2: document.getElementById('step-tab-2'),
+      stepTab3: document.getElementById('step-tab-3')
+    };
+
+    // 日志追加
+    function addLog(msg, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      const colors = {
+        info: 'text-slate-300',
+        success: 'text-emerald-400',
+        warn: 'text-amber-400',
+        error: 'text-rose-400'
+      };
+      div.className = colors[type] || 'text-slate-300';
+      div.textContent = `[${time}] ${msg}`;
+      el.logContainer.appendChild(div);
+      el.logContainer.scrollTop = el.logContainer.scrollHeight;
+    }
+
+    // 显示非阻断式 Toast 消息 (替代原生 alert)
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      const bgColors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        info: 'bg-slate-800 text-white',
+        warn: 'bg-amber-600 text-white'
+      };
+      const icons = {
+        success: 'check-circle-2',
+        error: 'alert-triangle',
+        info: 'info',
+        warn: 'alert-circle'
+      };
+
+      toast.className = `${bgColors[type] || bgColors.info} pointer-events-auto px-4 py-3 rounded-xl shadow-lg flex items-center space-x-2 text-xs font-medium transform transition-all duration-300 translate-y-2 opacity-0 max-w-sm`;
+      toast.innerHTML = `
+        <i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 flex-shrink-0"></i>
+        <span>${message}</span>
+      `;
+      el.toastContainer.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // 格式化文件大小
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 更新底部就绪状态及流程指示
+    function updateOverallStatus() {
+      const hasEpub = !!state.epubZip;
+      const hasCover = !!state.newCoverBlob;
+
+      // 更新步骤条样式
+      if (hasEpub && hasCover) {
+        el.stepTab1.className = "py-2 px-3 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center gap-2 font-medium";
+        el.stepTab2.className = "py-2 px-3 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center gap-2 font-medium";
+        el.stepTab3.className = "py-2 px-3 rounded-xl bg-indigo-600 text-white font-semibold flex items-center justify-center gap-2 shadow-sm";
+      } else if (hasEpub) {
+        el.stepTab1.className = "py-2 px-3 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center gap-2 font-medium";
+        el.stepTab2.className = "py-2 px-3 rounded-xl bg-white text-indigo-700 shadow-sm flex items-center justify-center gap-2 font-semibold";
+        el.stepTab3.className = "py-2 px-3 rounded-xl text-slate-600 flex items-center justify-center gap-2";
+      } else {
+        el.stepTab1.className = "py-2 px-3 rounded-xl bg-white text-indigo-700 shadow-sm flex items-center justify-center gap-2 font-semibold";
+        el.stepTab2.className = "py-2 px-3 rounded-xl text-slate-600 flex items-center justify-center gap-2";
+        el.stepTab3.className = "py-2 px-3 rounded-xl text-slate-600 flex items-center justify-center gap-2";
+      }
+
+      if (hasEpub && hasCover) {
+        el.btnProcessDownload.disabled = false;
+        el.exportStatusIcon.className = "w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600";
+        el.exportStatusIcon.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+        el.exportStatusText.textContent = "已准备就绪，可以一键替换并导出！";
+        el.exportStatusSub.textContent = `将替换目标路径: ${state.originalCoverPath || '新设 images/cover.jpg'}`;
+      } else if (hasEpub && !hasCover) {
+        el.btnProcessDownload.disabled = true;
+        el.exportStatusIcon.className = "w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600";
+        el.exportStatusIcon.innerHTML = '<i data-lucide="image" class="w-4 h-4"></i>';
+        el.exportStatusText.textContent = "EPUB 书籍已解析完成，请在右侧选择新封面";
+        el.exportStatusSub.textContent = "支持上传自定义图片或选用精选预设模板";
+      } else {
+        el.btnProcessDownload.disabled = true;
+        el.exportStatusIcon.className = "w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400";
+        el.exportStatusIcon.innerHTML = '<i data-lucide="info" class="w-4 h-4"></i>';
+        el.exportStatusText.textContent = "请先上传 EPUB 文件和一张新封面";
+        el.exportStatusSub.textContent = "完成后即可一键合成标准 EPUB 书籍";
+      }
+      lucide.createIcons();
+    }
+
+    // 动态生成一张漂亮的测试封面 Canvas
+    function createCoverCanvas(title, subtitle, author, theme = 'minimal') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 1800;
+      const ctx = canvas.getContext('2d');
+
+      if (theme === 'minimal') {
+        // 极简温润白金渐变
+        const grad = ctx.createLinearGradient(0, 0, 1200, 1800);
+        grad.addColorStop(0, '#fdfbfb');
+        grad.addColorStop(1, '#ebedee');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1200, 1800);
+
+        // 装饰金框
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 14;
+        ctx.strokeRect(80, 80, 1040, 1640);
+        ctx.strokeStyle = '#e6ca65';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(105, 105, 990, 1590);
+
+        // 文字
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 84px "Noto Sans SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(title, 600, 720);
+
+        ctx.fillStyle = '#7f8c8d';
+        ctx.font = '36px "Noto Sans SC", sans-serif';
+        ctx.fillText(subtitle, 600, 830);
+
+        ctx.fillStyle = '#b78727';
+        ctx.font = 'italic 42px serif';
+        ctx.fillText(`• ${author} 著 •`, 600, 1380);
+
+      } else if (theme === 'cyber') {
+        // 赛博霓虹深邃黑紫
+        const grad = ctx.createLinearGradient(0, 0, 1200, 1800);
+        grad.addColorStop(0, '#0f0c29');
+        grad.addColorStop(0.5, '#302b63');
+        grad.addColorStop(1, '#24243e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1200, 1800);
+
+        // 霓虹光环
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(600, 680, 260, 0, Math.PI * 2);
+        ctx.strokeStyle = '#00f2fe';
+        ctx.lineWidth = 12;
+        ctx.shadowColor = '#00f2fe';
+        ctx.shadowBlur = 40;
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 88px "Noto Sans SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#4facfe';
+        ctx.shadowBlur = 20;
+        ctx.fillText(title, 600, 710);
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#00f2fe';
+        ctx.font = '38px monospace';
+        ctx.fillText(`// ${subtitle}`, 600, 840);
+
+        ctx.fillStyle = '#e0e0e0';
+        ctx.font = '40px sans-serif';
+        ctx.fillText(`AUTH: [${author}]`, 600, 1420);
+
+      } else if (theme === 'nature') {
+        // 森林森系淡雅绿
+        const grad = ctx.createLinearGradient(0, 0, 0, 1800);
+        grad.addColorStop(0, '#134e5e');
+        grad.addColorStop(1, '#71b280');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1200, 1800);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath();
+        ctx.arc(600, 750, 420, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 86px "Noto Sans SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(title, 600, 720);
+
+        ctx.fillStyle = '#e8f5e9';
+        ctx.font = '36px "Noto Sans SC", sans-serif';
+        ctx.fillText(subtitle, 600, 830);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '42px serif';
+        ctx.fillText(author, 600, 1400);
+
+      } else {
+        // 典雅深邃夜空
+        const grad = ctx.createRadialGradient(600, 800, 100, 600, 800, 900);
+        grad.addColorStop(0, '#232526');
+        grad.addColorStop(1, '#0b0c10');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1200, 1800);
+
+        ctx.strokeStyle = '#c5a059';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(120, 120, 960, 1560);
+
+        ctx.fillStyle = '#f8f9fa';
+        ctx.font = 'bold 84px "Noto Sans SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(title, 600, 720);
+
+        ctx.fillStyle = '#c5a059';
+        ctx.font = '36px serif';
+        ctx.fillText(`—— ${subtitle} ——`, 600, 840);
+
+        ctx.fillStyle = '#a0aec0';
+        ctx.font = '40px "Noto Sans SC", sans-serif';
+        ctx.fillText(author, 600, 1380);
+      }
+
+      return canvas;
+    }
+
+    // 一键创建测试 EPUB 样本文件
+    async function generateSampleEpub() {
+      addLog('正在动态构建测试 EPUB 样本电子书...', 'info');
+      showToast('正在构建测试样本图书...', 'info');
+
+      try {
+        const zip = new JSZip();
+
+        // 1. mimetype (必须首位且不压缩)
+        zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+
+        // 2. META-INF/container.xml
+        const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`;
+        zip.file("META-INF/container.xml", containerXml);
+
+        // 生成原测试封面图 (复古极简风)
+        const oldCanvas = createCoverCanvas("星际漫步者的寓言", "THE FABLE OF STARGAZER", "安东尼·星河", "minimal");
+        const oldCoverBlob = await new Promise(resolve => oldCanvas.toBlob(resolve, 'image/jpeg', 0.9));
+        zip.file("OEBPS/images/cover.jpg", oldCoverBlob);
+
+        // 3. OEBPS/content.opf (标准的 EPUB 3 + EPUB 2 兼容定义)
+        const opfXml = `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="pub-id">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="pub-id">urn:uuid:7c9e6679-7425-40de-944b-sample-01</dc:identifier>
+    <dc:title>星际漫步者的寓言</dc:title>
+    <dc:creator>安东尼·星河</dc:creator>
+    <dc:publisher>银河漫游出版社</dc:publisher>
+    <dc:language>zh-CN</dc:language>
+    <dc:date>2026-10-01</dc:date>
+    <dc:description>一本关于星辰、时光与宇宙漂流哲学的测试样本电子书。</dc:description>
+    <meta name="cover" content="cover-image"/>
+  </metadata>
+  <manifest>
+    <item id="cover-image" href="images/cover.jpg" media-type="image/jpeg" properties="cover-image"/>
+    <item id="titlepage" href="titlepage.xhtml" media-type="application/xhtml+xml"/>
+    <item id="chapter1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="toc" href="toc.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="titlepage"/>
+    <itemref idref="chapter1"/>
+  </spine>
+  <guide>
+    <reference type="cover" title="封面" href="titlepage.xhtml"/>
+  </guide>
+</package>`;
+        zip.file("OEBPS/content.opf", opfXml);
+
+        // 4. 封面引导页 titlepage.xhtml
+        const titlepageHtml = `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">
+<head>
+  <title>Cover</title>
+  <style type="text/css">
+    @page { padding: 0; margin: 0; }
+    body { text-align: center; padding: 0; margin: 0; background-color: #000000; }
+    img { max-width: 100%; max-height: 100vh; height: auto; }
+  </style>
+</head>
+<body>
+  <div>
+    <img src="images/cover.jpg" alt="Cover Image"/>
+  </div>
+</body>
+</html>`;
+        zip.file("OEBPS/titlepage.xhtml", titlepageHtml);
+
+        // 5. 正文章节 chapter1.xhtml
+        const chapter1Html = `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">
+<head>
+  <title>第一章：远航星辰</title>
+  <style>
+    body { font-family: sans-serif; line-height: 1.8; padding: 2em; max-width: 700px; margin: auto; }
+    h1 { color: #333; border-bottom: 2px solid #6366f1; padding-bottom: 0.3em; }
+    p { text-indent: 2em; color: #444; }
+  </style>
+</head>
+<body>
+  <h1>第一章：远航星辰</h1>
+  <p>当飞船跃出柯伊伯带的静谧阴影时，银河就如同一条流动的碎钻之河，静默地铺展在舷窗之外。</p>
+  <p>老领航员擦拭着手中的星盘，低声对年轻的探险家说道：“记住，每一本书都像是一座微缩的星系，而它的封面，就是这颗星球最初折射给宇宙的光辉。”</p>
+</body>
+</html>`;
+        zip.file("OEBPS/chapter1.xhtml", chapter1Html);
+
+        // 6. NCX 与 目录
+        zip.file("OEBPS/toc.ncx", `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head><meta name="dtb:uid" content="urn:uuid:7c9e6679-7425-40de-944b-sample-01"/></head>
+  <docTitle><text>星际漫步者的寓言</text></docTitle>
+  <navMap>
+    <navPoint id="np-1" playOrder="1">
+      <navLabel><text>第一章：远航星辰</text></navLabel>
+      <content src="chapter1.xhtml"/>
+    </navPoint>
+  </navMap>
+</ncx>`);
+
+        // 生成 Blob 并模拟文件载入
+        const sampleBlob = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+        const sampleFile = new File([sampleBlob], "星际漫步者的寓言(测试样本).epub", { type: "application/epub+zip" });
+
+        await handleEpubFile(sampleFile);
+        showToast('测试样本已成功生成并载入！', 'success');
+      } catch (err) {
+        addLog(`生成测试样本失败: ${err.message}`, 'error');
+        showToast('生成样本失败，请查看日志', 'error');
+      }
+    }
+
+    // 解析 EPUB 文件
+    async function handleEpubFile(file) {
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.epub')) {
+        showToast('请选择以 .epub 结尾的电子书文件！', 'warn');
+        return;
+      }
+
+      addLog(`开始载入电子书: ${file.name} (${formatBytes(file.size)})`, 'info');
+      el.epubStatusTag.textContent = "解析中...";
+      el.epubStatusTag.className = "text-xs px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full font-medium animate-pulse";
+
+      try {
+        const zip = await JSZip.loadAsync(file);
+        state.epubFile = file;
+        state.epubZip = zip;
+
+        // 1. 读取 META-INF/container.xml 寻找 OPF 路径
+        const containerEntry = zip.file("META-INF/container.xml");
+        if (!containerEntry) {
+          throw new Error("无效的 EPUB: 缺少 META-INF/container.xml 文件");
+        }
+
+        const containerXmlText = await containerEntry.async("text");
+        const domParser = new DOMParser();
+        const containerDoc = domParser.parseFromString(containerXmlText, "application/xml");
+        const rootfileNode = containerDoc.querySelector("rootfile");
+
+        if (!rootfileNode || !rootfileNode.getAttribute("full-path")) {
+          throw new Error("无法在 container.xml 中解析到 rootfile full-path 路径");
+        }
+
+        const opfPath = rootfileNode.getAttribute("full-path");
+        state.opfPath = opfPath;
+        addLog(`找到包描述文件 OPF: ${opfPath}`, 'info');
+
+        // 2. 读取并解析 OPF XML
+        const opfEntry = zip.file(opfPath);
+        if (!opfEntry) {
+          throw new Error(`找不到 OPF 文件: ${opfPath}`);
+        }
+
+        const opfXmlText = await opfEntry.async("text");
+        const opfDoc = domParser.parseFromString(opfXmlText, "application/xml");
+        state.opfDoc = opfDoc;
+
+        // 3. 提取图书基本元数据
+        const getMeta = (tag) => {
+          const node = opfDoc.querySelector(`metadata > dc\\:${tag}, metadata > ${tag}`);
+          return node ? node.textContent.trim() : '';
+        };
+
+        state.metadata.title = getMeta('title') || file.name.replace(/\.epub$/i, '');
+        state.metadata.creator = getMeta('creator') || '未知作者';
+        state.metadata.publisher = getMeta('publisher') || '未知出版商';
+        state.metadata.language = getMeta('language') || 'zh-CN';
+
+        const pkgNode = opfDoc.querySelector('package');
+        state.metadata.version = pkgNode ? pkgNode.getAttribute('version') || '2.0' : '2.0';
+
+        // 4. 深入探测并提取原封面图片
+        // OPF 相对目录
+        const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+        let coverItem = null;
+
+        // 策略 A (EPUB 3): manifest 中 properties 包含 "cover-image"
+        coverItem = opfDoc.querySelector('manifest > item[properties*="cover-image"]');
+
+        // 策略 B (EPUB 2): metadata 中 meta[name="cover"] 的 content 属性匹配 item id
+        if (!coverItem) {
+          const metaCover = opfDoc.querySelector('metadata > meta[name="cover"]');
+          if (metaCover) {
+            const coverId = metaCover.getAttribute('content');
+            if (coverId) {
+              coverItem = opfDoc.querySelector(`manifest > item[id="${coverId}"]`);
+            }
+          }
+        }
+
+        // 策略 C: manifest 中 id 或 href 包含 "cover" 且 media-type 为图片的项
+        if (!coverItem) {
+          const items = Array.from(opfDoc.querySelectorAll('manifest > item'));
+          coverItem = items.find(it => {
+            const id = (it.getAttribute('id') || '').toLowerCase();
+            const href = (it.getAttribute('href') || '').toLowerCase();
+            const type = (it.getAttribute('media-type') || '').toLowerCase();
+            return (id.includes('cover') || href.includes('cover')) && type.startsWith('image/');
+          });
+        }
+
+        // 策略 D: 检查 guide 中的 cover 引用
+        if (!coverItem) {
+          const guideCover = opfDoc.querySelector('guide > reference[type="cover"]');
+          if (guideCover) {
+            const guideHref = guideCover.getAttribute('href');
+            if (guideHref) {
+              const cleanHref = guideHref.split('#')[0];
+              coverItem = opfDoc.querySelector(`manifest > item[href="${cleanHref}"]`);
+            }
+          }
+        }
+
+        state.originalCoverItem = coverItem;
+
+        if (coverItem) {
+          const href = coverItem.getAttribute('href');
+          // 组装绝对路径
+          const resolvedCoverPath = opfDir + href;
+          state.originalCoverPath = resolvedCoverPath;
+          addLog(`探测到书籍原封面项: ID="${coverItem.getAttribute('id')}", 路径="${resolvedCoverPath}"`, 'success');
+
+          const coverZipFile = zip.file(resolvedCoverPath);
+          if (coverZipFile) {
+            const blob = await coverZipFile.async('blob');
+            state.originalCoverBlob = blob;
+            const coverUrl = URL.createObjectURL(blob);
+
+            // 更新原封面展示
+            el.originalCoverImg.src = coverUrl;
+            el.originalCoverImg.classList.remove('hidden');
+            el.originalCoverPlaceholder.classList.add('hidden');
+
+            el.previewOriginalImg.src = coverUrl;
+            el.previewOriginalImg.classList.remove('hidden');
+            el.previewOriginalEmpty.classList.add('hidden');
+            el.previewOriginalLabel.textContent = `原尺寸 (${formatBytes(blob.size)})`;
+          } else {
+            addLog(`警告: 清单中指定的封面文件在 ZIP 中未找到: ${resolvedCoverPath}`, 'warn');
+            setNoOriginalCover();
+          }
+        } else {
+          addLog(`该书籍未明确标记封面图片，替换时将以标准规范新增`, 'warn');
+          setNoOriginalCover();
+        }
+
+        // 更新 UI 界面展示
+        el.metaTitle.textContent = state.metadata.title;
+        el.metaCreator.textContent = state.metadata.creator;
+        el.metaPublisher.textContent = state.metadata.publisher;
+        el.metaLanguage.textContent = state.metadata.language;
+        el.metaVersion.textContent = `EPUB ${state.metadata.version}`;
+        el.metaCoverPath.textContent = state.originalCoverPath || '无原封面';
+        el.metaFilesize.textContent = `文件大小: ${formatBytes(file.size)}`;
+        el.metaItemscount.textContent = `资源项: ${Object.keys(zip.files).length} 个`;
+
+        // 同步填入编辑输入框
+        el.editTitle.value = state.metadata.title;
+        el.editCreator.value = state.metadata.creator;
+        el.editPublisher.value = state.metadata.publisher;
+        el.editLanguage.value = state.metadata.language;
+
+        el.epubStatusTag.textContent = "已就绪";
+        el.epubStatusTag.className = "text-xs px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full font-medium";
+        el.epubInfoPanel.classList.remove('hidden');
+        el.btnClearEpub.classList.remove('hidden');
+
+        updateOverallStatus();
+        showToast('EPUB 电子书解析成功！', 'success');
+
+      } catch (err) {
+        console.error(err);
+        addLog(`解析失败: ${err.message}`, 'error');
+        showToast(`解析失败: ${err.message}`, 'error');
+        resetEpubState();
+      }
+    }
+
+    function setNoOriginalCover() {
+      state.originalCoverBlob = null;
+      state.originalCoverPath = null;
+      el.originalCoverImg.classList.add('hidden');
+      el.originalCoverPlaceholder.classList.remove('hidden');
+      el.previewOriginalImg.classList.add('hidden');
+      el.previewOriginalEmpty.classList.remove('hidden');
+      el.previewOriginalLabel.textContent = "原书未检测到独立封面";
+    }
+
+    function resetEpubState() {
+      state.epubFile = null;
+      state.epubZip = null;
+      state.opfPath = null;
+      state.opfDoc = null;
+      state.originalCoverBlob = null;
+      state.originalCoverPath = null;
+      state.originalCoverItem = null;
+
+      el.epubInput.value = '';
+      el.epubStatusTag.textContent = "未载入文件";
+      el.epubStatusTag.className = "text-xs px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full font-medium";
+      el.epubInfoPanel.classList.add('hidden');
+      el.btnClearEpub.classList.add('hidden');
+
+      setNoOriginalCover();
+      updateOverallStatus();
+    }
+
+    // 处理上传的新封面图片
+    async function handleNewCoverFile(fileOrBlob, filename = 'new-cover.jpg') {
+      if (!fileOrBlob) return;
+
+      addLog(`开始载入新封面图片: ${filename}`, 'info');
+      el.coverStatusTag.textContent = "处理中...";
+      el.coverStatusTag.className = "text-xs px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full font-medium animate-pulse";
+
+      try {
+        const objectUrl = URL.createObjectURL(fileOrBlob);
+
+        // 获取图片分辨率
+        const img = new Image();
+        img.src = objectUrl;
+        await new Promise((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error("无法加载图片文件，格式可能不被支持"));
+        });
+
+        state.newCoverDimensions = { width: img.naturalWidth, height: img.naturalHeight };
+        state.newCoverFile = fileOrBlob;
+        state.newCoverBlob = fileOrBlob;
+        state.newCoverType = fileOrBlob.type || 'image/jpeg';
+
+        // 更新 UI
+        el.newCoverThumb.src = objectUrl;
+        el.newCoverFilename.textContent = filename;
+        el.newCoverDims.textContent = `分辨率: ${img.naturalWidth} × ${img.naturalHeight}`;
+        el.newCoverFilesize.textContent = formatBytes(fileOrBlob.size);
+        el.newCoverInfoPanel.classList.remove('hidden');
+        el.btnClearCover.classList.remove('hidden');
+
+        el.coverStatusTag.textContent = "已选取";
+        el.coverStatusTag.className = "text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-full font-medium";
+
+        // 更新右侧预览图
+        el.previewNewImg.src = objectUrl;
+        el.previewNewImg.classList.remove('hidden');
+        el.previewNewEmpty.classList.add('hidden');
+        el.previewNewLabel.textContent = `${img.naturalWidth}×${img.naturalHeight} (${formatBytes(fileOrBlob.size)})`;
+
+        addLog(`新封面已就绪: ${img.naturalWidth}×${img.naturalHeight}, 大小: ${formatBytes(fileOrBlob.size)}`, 'success');
+        updateOverallStatus();
+        showToast('新封面图片已载入！', 'success');
+
+      } catch (err) {
+        console.error(err);
+        addLog(`载入新封面出错: ${err.message}`, 'error');
+        showToast(err.message, 'error');
+        resetCoverState();
+      }
+    }
+
+    function resetCoverState() {
+      state.newCoverFile = null;
+      state.newCoverBlob = null;
+      el.coverInput.value = '';
+      el.coverStatusTag.textContent = "未选择新图";
+      el.coverStatusTag.className = "text-xs px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full font-medium";
+      el.newCoverInfoPanel.classList.add('hidden');
+      el.btnClearCover.classList.add('hidden');
+
+      el.previewNewImg.classList.add('hidden');
+      el.previewNewEmpty.classList.remove('hidden');
+      el.previewNewLabel.textContent = "等待选择新封面";
+
+      updateOverallStatus();
+    }
+
+    // 将任意图片 Blob 转为高兼容标准的 JPEG Blob
+    async function convertBlobToJpeg(blob, quality = 0.92) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(blob);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob(resBlob => {
+            if (resBlob) resolve(resBlob);
+            else reject(new Error("Canvas 转换为 JPEG Blob 失败"));
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("无法读取图片进行转码"));
+        };
+        img.src = url;
+      });
+    }
+
+    // 核心：执行封面替换与 EPUB 重构
+    async function processAndExportEpub() {
+      if (!state.epubZip || !state.newCoverBlob) {
+        showToast('请确保 EPUB 电子书与新封面均已载入', 'warn');
+        return;
+      }
+
+      el.btnProcessDownload.disabled = true;
+      el.btnProcessDownload.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>正在打包 EPUB...</span>
+      `;
+
+      addLog("=== 开始执行 EPUB 封面替换与打包任务 ===", 'info');
+
+      try {
+        const zip = state.epubZip;
+        const opfPath = state.opfPath;
+        const opfDoc = state.opfDoc;
+        const shouldConvertToJpeg = el.optConvertJpeg.checked;
+        const shouldUpdateHtml = el.optUpdateHtml.checked;
+
+        // 1. 处理新封面图片 Blob 及格式
+        let finalCoverBlob = state.newCoverBlob;
+        let finalMimeType = state.newCoverType;
+        let finalExt = 'jpg';
+
+        if (shouldConvertToJpeg || finalMimeType !== 'image/jpeg') {
+          addLog("正在将封面图转换为高兼容度的 JPEG 格式...", 'info');
+          finalCoverBlob = await convertBlobToJpeg(finalCoverBlob, 0.92);
+          finalMimeType = 'image/jpeg';
+          finalExt = 'jpg';
+        } else {
+          if (finalMimeType.includes('png')) finalExt = 'png';
+          else if (finalMimeType.includes('webp')) finalExt = 'webp';
+        }
+
+        // OPF 相对目录
+        const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+
+        // 2. 计算目标覆盖路径或新建路径
+        let targetCoverZipPath = state.originalCoverPath;
+        let targetCoverId = state.originalCoverItem ? state.originalCoverItem.getAttribute('id') : 'cover-image';
+
+        if (!targetCoverZipPath) {
+          // 如果原本没有封面，则默认放入 images/cover.jpg
+          targetCoverZipPath = opfDir ? `${opfDir}images/cover.${finalExt}` : `images/cover.${finalExt}`;
+          addLog(`原书未探测到封面，将在新路径创建: ${targetCoverZipPath}`, 'info');
+        } else {
+          // 如果原封面扩展名与现在不同（例如原为 .png，现为 .jpg）
+          if (!targetCoverZipPath.toLowerCase().endsWith('.' + finalExt)) {
+            const oldPath = targetCoverZipPath;
+            targetCoverZipPath = targetCoverZipPath.substring(0, targetCoverZipPath.lastIndexOf('.')) + '.' + finalExt;
+            addLog(`更新封面文件扩展名: ${oldPath} -> ${targetCoverZipPath}`, 'info');
+            // 删除原文件
+            zip.remove(oldPath);
+          }
+        }
+
+        // 3. 将新封面数据写入 ZIP
+        zip.file(targetCoverZipPath, finalCoverBlob);
+        addLog(`已写入新封面文件数据至: ${targetCoverZipPath}`, 'success');
+
+        // 计算相对于 OPF 文件的 href 路径
+        let relativeHref = targetCoverZipPath;
+        if (opfDir && relativeHref.startsWith(opfDir)) {
+          relativeHref = relativeHref.substring(opfDir.length);
+        }
+
+        // 4. 更新 OPF DOM 清单与元数据
+        let manifestNode = opfDoc.querySelector('manifest');
+        let metadataNode = opfDoc.querySelector('metadata');
+
+        if (!manifestNode) {
+          manifestNode = opfDoc.createElement('manifest');
+          opfDoc.documentElement.appendChild(manifestNode);
+        }
+        if (!metadataNode) {
+          metadataNode = opfDoc.createElement('metadata');
+          opfDoc.documentElement.insertBefore(metadataNode, manifestNode);
+        }
+
+        // 清单项 (manifest item) 更新或创建
+        let itemNode = state.originalCoverItem ? opfDoc.querySelector(`manifest > item[id="${targetCoverId}"]`) : null;
+
+        if (!itemNode) {
+          itemNode = opfDoc.createElement('item');
+          itemNode.setAttribute('id', targetCoverId);
+          manifestNode.appendChild(itemNode);
+        }
+
+        itemNode.setAttribute('href', relativeHref);
+        itemNode.setAttribute('media-type', finalMimeType);
+
+        // EPUB 3 标准：添加 properties="cover-image"
+        const existingProps = itemNode.getAttribute('properties') || '';
+        if (!existingProps.includes('cover-image')) {
+          itemNode.setAttribute('properties', (existingProps + ' cover-image').trim());
+        }
+
+        // EPUB 2 标准：确保 metadata 中有 <meta name="cover" content="...">
+        let metaCoverNode = opfDoc.querySelector('metadata > meta[name="cover"]');
+        if (!metaCoverNode) {
+          metaCoverNode = opfDoc.createElement('meta');
+          metaCoverNode.setAttribute('name', 'cover');
+          metadataNode.appendChild(metaCoverNode);
+        }
+        metaCoverNode.setAttribute('content', targetCoverId);
+
+        // 5. 应用用户可能微调的书名/作者/出版社
+        const applyMetaText = (tagName, val) => {
+          if (!val) return;
+          let node = opfDoc.querySelector(`metadata > dc\\:${tagName}, metadata > ${tagName}`);
+          if (!node) {
+            node = opfDoc.createElementNS('http://purl.org/dc/elements/1.1/', `dc:${tagName}`);
+            metadataNode.appendChild(node);
+          }
+          node.textContent = val.trim();
+        };
+
+        if (el.editTitle.value.trim()) applyMetaText('title', el.editTitle.value);
+        if (el.editCreator.value.trim()) applyMetaText('creator', el.editCreator.value);
+        if (el.editPublisher.value.trim()) applyMetaText('publisher', el.editPublisher.value);
+        if (el.editLanguage.value.trim()) applyMetaText('language', el.editLanguage.value);
+
+        // 6. 若启用了更新 HTML 封面页，扫描并更新封面 XHTML / SVG 引用
+        if (shouldUpdateHtml) {
+          addLog("正在扫描并更新关联封面引导页 (titlepage/cover.xhtml)...", 'info');
+          const coverFilename = targetCoverZipPath.split('/').pop();
+
+          for (const filename of Object.keys(zip.files)) {
+            if (filename.toLowerCase().includes('cover') || filename.toLowerCase().includes('titlepage')) {
+              if (filename.endsWith('.xhtml') || filename.endsWith('.html') || filename.endsWith('.htm')) {
+                const htmlFile = zip.file(filename);
+                if (htmlFile) {
+                  let content = await htmlFile.async('text');
+                  // 替换可能存在的 <img> 链接或 svg <image xlink:href="...">
+                  const originalFilename = state.originalCoverPath ? state.originalCoverPath.split('/').pop() : null;
+                  if (originalFilename && originalFilename !== coverFilename) {
+                    content = content.split(originalFilename).join(coverFilename);
+                    zip.file(filename, content);
+                    addLog(`已在引导页 ${filename} 中同步更新图片引用`, 'info');
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // 7. 序列化 OPF 并写回 ZIP
+        const xmlSerializer = new XMLSerializer();
+        const updatedOpfText = xmlSerializer.serializeToString(opfDoc);
+        zip.file(opfPath, updatedOpfText);
+        addLog("OPF 配置文件已写入更新", 'success');
+
+        // 8. 规范化重构 ZIP (确保 mimetype 为首位且不压缩)
+        addLog("正在打包生成新的 EPUB 文件包...", 'info');
+        const finalZip = new JSZip();
+
+        // 首先写入 mimetype (STORE 模式，无压缩)
+        finalZip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+
+        // 将其余全部文件复制到新 zip 中 (使用 DEFLATE 压缩)
+        for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
+          if (relativePath === 'mimetype') continue;
+          if (zipEntry.dir) {
+            finalZip.folder(relativePath);
+          } else {
+            const data = await zipEntry.async("uint8array");
+            finalZip.file(relativePath, data, {
+              compression: "DEFLATE",
+              compressionOptions: { level: 9 }
+            });
+          }
+        }
+
+        // 生成最终 EPUB Blob
+        const outputBlob = await finalZip.generateAsync({
+          type: "blob",
+          mimeType: "application/epub+zip"
+        });
+
+        // 9. 触发浏览器安全下载
+        const originalBaseName = state.epubFile.name.replace(/\.epub$/i, '');
+        const downloadFilename = `${originalBaseName}_新封面.epub`;
+
+        const downloadUrl = URL.createObjectURL(outputBlob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = downloadFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+
+        addLog(`=== 导出成功: ${downloadFilename} (${formatBytes(outputBlob.size)}) ===`, 'success');
+        showToast('替换成功！新 EPUB 文件已开始下载', 'success');
+
+      } catch (err) {
+        console.error(err);
+        addLog(`生成导出失败: ${err.message}`, 'error');
+        showToast(`导出失败: ${err.message}`, 'error');
+      } finally {
+        el.btnProcessDownload.disabled = false;
+        el.btnProcessDownload.innerHTML = `
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>替换封面并下载 EPUB</span>
+        `;
+        lucide.createIcons();
+      }
+    }
+
+    // 绑定 EPUB 拖拽上传
+    el.epubDropZone.addEventListener('click', () => el.epubInput.click());
+    el.epubInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleEpubFile(e.target.files[0]);
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach(name => {
+      el.epubDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.epubDropZone.classList.add('border-indigo-500', 'bg-indigo-50/40');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      el.epubDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.epubDropZone.classList.remove('border-indigo-500', 'bg-indigo-50/40');
+      });
+    });
+
+    el.epubDropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleEpubFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    el.btnClearEpub.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetEpubState();
+      showToast('已清空载入的 EPUB 电子书', 'info');
+    });
+
+    // 绑定新封面拖拽上传
+    el.coverDropZone.addEventListener('click', () => el.coverInput.click());
+    el.coverInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleNewCoverFile(e.target.files[0], e.target.files[0].name);
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach(name => {
+      el.coverDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.coverDropZone.classList.add('border-violet-500', 'bg-violet-50/40');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      el.coverDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.coverDropZone.classList.remove('border-violet-500', 'bg-violet-50/40');
+      });
+    });
+
+    el.coverDropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        const file = e.dataTransfer.files[0];
+        if (file.type.startsWith('image/')) {
+          handleNewCoverFile(file, file.name);
+        } else {
+          showToast('请拖入有效的图片文件 (JPG / PNG / WEBP)', 'warn');
+        }
+      }
+    });
+
+    el.btnClearCover.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetCoverState();
+      showToast('已移除新封面图片', 'info');
+    });
+
+    // 预设封面模板点击快速生成并载入
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const theme = btn.dataset.preset;
+        const currentTitle = el.editTitle.value || (state.metadata.title || '无境之书');
+        const currentAuthor = el.editCreator.value || (state.metadata.creator || '经典文集');
+
+        addLog(`根据当前图书《${currentTitle}》绘制【${theme}】主题预设封面...`, 'info');
+        const canvas = createCoverCanvas(currentTitle, "SPECIAL EDITION", currentAuthor, theme);
+
+        canvas.toBlob(blob => {
+          handleNewCoverFile(blob, `preset-${theme}-cover.jpg`);
+        }, 'image/jpeg', 0.92);
+      });
+    });
+
+    // 导出处理按钮
+    el.btnProcessDownload.addEventListener('click', processAndExportEpub);
+
+    // 顶部“生成测试样本”
+    el.btnCreateSample.addEventListener('click', generateSampleEpub);
+
+    // 日志抽屉展开切换
+    el.toggleLogBtn.addEventListener('click', () => {
+      el.logContainer.classList.toggle('hidden');
+    });
+
+    // 使用说明模态窗控制
+    el.btnShowHelp.addEventListener('click', () => {
+      el.helpModal.classList.remove('hidden');
+    });
+    [el.closeHelpBtn, el.btnCloseHelpConfirm].forEach(btn => {
+      btn.addEventListener('click', () => {
+        el.helpModal.classList.add('hidden');
+      });
+    });
+    el.helpModal.addEventListener('click', (e) => {
+      if (e.target === el.helpModal) el.helpModal.classList.add('hidden');
+    });
+
+    // 初始化欢迎日志
+    addLog("EPUB 封面工坊已就绪，可拖入任意 EPUB 文件或点击右上角生成测试样本进行体验。", 'info');
+  </script>
+</body>
+</html>

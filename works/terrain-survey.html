@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TALOS AIC // 极简黑白地形测绘协议</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono for clean minimalist architectural typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            mono: {
+              50: '#F9FAFB',
+              100: '#F3F4F6',
+              200: '#E5E7EB',
+              300: '#D1D5DB',
+              400: '#9CA3AF',
+              500: '#6B7280',
+              600: '#4B5563',
+              700: '#374151',
+              800: '#1F2937',
+              900: '#111827',
+              950: '#0A0A0A',
+            }
+          },
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      background-color: #F8F9FA;
+      color: #111827;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', 'Inter', monospace;
+    }
+
+    /* Minimalist frosted white paper card */
+    .mono-card {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    /* Crisp minimalist button */
+    .mono-btn {
+      position: relative;
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      color: #374151;
+      transition: all 0.15s ease-in-out;
+    }
+    .mono-btn:hover {
+      background: #F3F4F6;
+      border-color: #9CA3AF;
+      color: #0A0A0A;
+    }
+    .mono-btn.active {
+      background: #0A0A0A;
+      color: #FFFFFF;
+      border-color: #0A0A0A;
+    }
+
+    /* Architectural grid background */
+    .architectural-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+    }
+
+    /* Custom minimalist range slider */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: #E5E7EB;
+      height: 3px;
+      border-radius: 2px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 12px;
+      width: 12px;
+      border-radius: 50%;
+      background: #0A0A0A;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+      transition: transform 0.1s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* Modal fade transition */
+    .fade-out {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.98);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+
+<body class="w-screen h-screen flex flex-col relative select-none bg-[#F8F9FA]">
+
+  <div class="absolute inset-0 architectural-grid pointer-events-none z-0"></div>
+
+  <!-- 3D / 2D WebGL Viewport -->
+  <div id="viewport-container" class="absolute inset-0 z-0 cursor-crosshair">
+    <canvas id="webgl-canvas" class="w-full h-full block"></canvas>
+  </div>
+
+  <header class="relative z-20 w-full px-6 py-3 flex items-center justify-between border-b border-black/[0.06] bg-white/80 backdrop-blur-md">
+    <!-- Left: Title & Minimalist Branding -->
+    <div class="flex items-center space-x-4">
+      <div class="w-2.5 h-6 bg-black"></div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-sans font-bold text-base tracking-wider text-black">TALOS SURVEY</span>
+          <span class="text-[10px] px-1.5 py-0.5 bg-black/5 text-mono-700 border border-black/10 rounded font-mono font-medium">AIC-PROTO</span>
+        </div>
+        <div class="text-[10px] text-mono-400 tracking-wider flex items-center space-x-2.5 mt-0.5">
+          <span>SEED: <strong id="lbl-seed" class="text-black font-mono font-semibold">0x48A2</strong></span>
+          <span class="text-mono-300">/</span>
+          <span id="lbl-biome" class="text-mono-600 font-medium">高地山脊 (RIDGE)</span>
+          <span class="text-mono-300">/</span>
+          <span id="system-time" class="text-mono-500">00:00:00 SOL</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: View Mode Switch & Randomize Terrain -->
+    <div class="flex items-center space-x-2">
+      <!-- Random Terrain Regeneration Button -->
+      <button id="btn-random-terrain" class="mono-btn px-3 py-1.5 text-xs text-black font-semibold rounded-md flex items-center space-x-1.5 shadow-sm" title="随机生成全新地貌">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <span>随机重构地貌</span>
+      </button>
+
+      <!-- Center View Mode Toggle -->
+      <div class="flex items-center p-0.5 bg-mono-100 border border-black/5 rounded-md space-x-0.5">
+        <button id="btn-view-2d" class="mono-btn active px-3 py-1 text-xs tracking-wide font-medium rounded">
+          2D 平面测绘
+        </button>
+        <button id="btn-view-3d" class="mono-btn px-3 py-1 text-xs tracking-wide font-medium rounded">
+          3D 投影视角
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Telemetry & Orientation Mode -->
+    <div class="flex items-center space-x-3 text-xs">
+      <div class="flex items-center bg-mono-100 p-0.5 rounded-md border border-black/5 text-[11px]">
+        <button id="btn-drag-elevate" class="px-2.5 py-1 rounded text-white bg-black font-medium" title="鼠标左键抬升等高线，右键旋转视角">
+          左键：等高隆起
+        </button>
+        <button id="btn-drag-orbit" class="px-2.5 py-1 rounded text-mono-500 hover:text-black" title="鼠标左键直接旋转三维视角">
+          左键：自由旋转
+        </button>
+      </div>
+      <div class="hidden lg:flex items-center space-x-1.5 pl-2 text-[10px] text-mono-400 font-mono">
+        <span class="w-1.5 h-1.5 rounded-full bg-black/60"></span>
+        <span>AUDIO ACTIVE</span>
+      </div>
+    </div>
+  </header>
+
+  <div id="guide-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm transition-all duration-300">
+    <div class="mono-card w-[420px] max-w-[90vw] p-6 rounded-xl shadow-2xl border border-black/10 relative space-y-4">
+      <div class="flex items-center justify-between border-b border-black/5 pb-3">
+        <div class="flex items-center space-x-2">
+          <div class="w-2 h-4 bg-black"></div>
+          <h3 class="font-sans font-bold text-sm tracking-wide text-black">TALOS AIC // 测绘操作协议</h3>
+        </div>
+        <span class="text-[10px] text-mono-400 font-mono">DOC-01</span>
+      </div>
+
+      <div class="space-y-2.5 text-xs text-mono-600 leading-relaxed font-sans">
+        <div class="flex items-start space-x-2.5">
+          <span class="font-mono text-black font-bold">01.</span>
+          <p><strong class="text-black font-semibold">动态等高线交互：</strong>在地图上移动鼠标，对应区域等高线将实时隆起变高；按住左键可加速地表重塑。</p>
+        </div>
+        <div class="flex items-start space-x-2.5">
+          <span class="font-mono text-black font-bold">02.</span>
+          <p><strong class="text-black font-semibold">视角旋转与缩放：</strong>按住<span class="text-black font-medium underline underline-offset-2">鼠标右键拖拽</span>可 360° 全方位自由旋转；滑动滚轮放大缩小。</p>
+        </div>
+        <div class="flex items-start space-x-2.5">
+          <span class="font-mono text-black font-bold">03.</span>
+          <p><strong class="text-black font-semibold">测绘音效：</strong>程序内置声学地质探测反馈已自动启用。</p>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button id="btn-close-modal" class="w-full py-2.5 bg-black hover:bg-mono-800 text-white font-medium text-xs rounded-lg transition-colors flex items-center justify-center space-x-1.5 shadow-sm">
+          <span>进入测绘系统</span>
+          <span>→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tactical-cursor" class="absolute pointer-events-none z-30 transform -translate-x-1/2 -translate-y-1/2 transition-opacity duration-200 opacity-0 hidden sm:block">
+    <div class="relative w-20 h-20 flex items-center justify-center">
+      <div class="absolute inset-0 border border-black/25 rounded-full"></div>
+      <div class="w-1.5 h-1.5 bg-black rounded-full"></div>
+      <div class="absolute w-6 h-[1px] bg-black/40"></div>
+      <div class="absolute h-6 w-[1px] bg-black/40"></div>
+      <div class="absolute left-full top-0 ml-3 bg-white/95 border border-black/10 rounded-md p-1.5 text-[10px] whitespace-nowrap shadow-md backdrop-blur">
+        <div class="text-mono-500 font-mono">LOC: <span id="hud-coords" class="text-black font-medium">X: 000 | Y: 000</span></div>
+        <div class="text-black font-bold font-mono">ALT: <span id="hud-elev">+0.00 M</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="absolute right-6 top-16 z-20 mono-card p-3 rounded-lg flex flex-col items-center space-y-2">
+    <div class="flex items-center justify-between w-full text-[9px] text-mono-400 border-b border-black/5 pb-1">
+      <span class="font-mono text-mono-700 font-semibold">COMPASS</span>
+      <span id="compass-hdg" class="text-black font-mono font-bold">000°</span>
+    </div>
+
+    <!-- Minimalist Compass Dial Visualizer -->
+    <div class="relative w-20 h-20 rounded-full border border-black/10 bg-white flex items-center justify-center shadow-inner cursor-grab active:cursor-grabbing" id="compass-widget" title="拖拽罗盘旋转方位">
+      <div id="compass-disc" class="absolute inset-0 rounded-full flex items-center justify-center transition-transform duration-75">
+        <span class="absolute top-1 text-[9px] font-bold text-black">N</span>
+        <span class="absolute bottom-1 text-[8px] text-mono-400">S</span>
+        <span class="absolute right-1.5 text-[8px] text-mono-400">E</span>
+        <span class="absolute left-1.5 text-[8px] text-mono-400">W</span>
+        <div class="w-full h-[1px] bg-mono-200"></div>
+        <div class="h-full w-[1px] bg-mono-200 absolute"></div>
+        <div class="w-1 h-6 bg-black absolute top-2 rounded-full"></div>
+      </div>
+      <div class="w-2 h-2 rounded-full bg-black z-10"></div>
+    </div>
+
+    <!-- Quick Alignment Snaps -->
+    <div class="grid grid-cols-4 gap-1 w-full text-[10px]">
+      <button id="cam-snap-n" class="mono-btn py-1 text-center font-semibold rounded text-black" title="正北俯视">正北</button>
+      <button id="cam-snap-iso" class="mono-btn py-1 text-center rounded text-mono-600" title="45° 等轴视角">等轴</button>
+      <button id="cam-snap-low" class="mono-btn py-1 text-center rounded text-mono-600" title="低空视角">低空</button>
+      <button id="cam-snap-side" class="mono-btn py-1 text-center rounded text-mono-600" title="侧向断面">侧视</button>
+    </div>
+  </div>
+
+  <aside class="absolute left-6 top-16 z-20 w-72 mono-card p-4 space-y-3.5 rounded-xl border border-black/10 max-h-[85vh] overflow-y-auto">
+    <!-- Panel Header -->
+    <div class="flex items-center justify-between border-b border-black/5 pb-2">
+      <div class="flex items-center space-x-2">
+        <div class="w-1.5 h-1.5 bg-black rounded-full"></div>
+        <h2 class="text-xs font-bold tracking-wider text-black font-sans uppercase">等高线控制台</h2>
+      </div>
+      <span class="text-[9px] text-mono-400 font-mono">AIC v3.5</span>
+    </div>
+
+    <!-- Presets -->
+    <div class="space-y-1.5">
+      <label class="text-[10px] text-mono-400 tracking-wider uppercase font-semibold">地貌形态预设</label>
+      <div class="grid grid-cols-2 gap-1.5">
+        <button class="preset-btn mono-btn active py-1.5 px-2 text-[11px] rounded-md text-left" data-preset="0">高地山脊</button>
+        <button class="preset-btn mono-btn py-1.5 px-2 text-[11px] rounded-md text-left" data-preset="1">侵蚀台地</button>
+        <button class="preset-btn mono-btn py-1.5 px-2 text-[11px] rounded-md text-left" data-preset="2">火山口盆地</button>
+        <button class="preset-btn mono-btn py-1.5 px-2 text-[11px] rounded-md text-left" data-preset="3">断裂构造带</button>
+      </div>
+    </div>
+
+    <!-- Mouse Interaction Mode Selector -->
+    <div class="space-y-1.5 pt-1 border-t border-black/5">
+      <label class="text-[10px] text-mono-400 tracking-wider uppercase font-semibold">交互变形模式</label>
+      <div class="grid grid-cols-3 gap-1.5">
+        <button id="mode-raise" class="mono-btn active py-1 px-1.5 text-[10px] rounded text-center">▲ 隆起抬高</button>
+        <button id="mode-crater" class="mono-btn py-1 px-1.5 text-[10px] rounded text-center">▼ 沉降下陷</button>
+        <button id="mode-ripple" class="mono-btn py-1 px-1.5 text-[10px] rounded text-center">◎ 声呐脉冲</button>
+      </div>
+    </div>
+
+    <!-- Sliders -->
+    <div class="space-y-2.5 pt-1 border-t border-black/5">
+      <div class="space-y-1">
+        <div class="flex justify-between text-[11px]">
+          <span class="text-mono-600">等高线抬升幅度</span>
+          <span id="val-height" class="text-black font-mono font-medium">+65m</span>
+        </div>
+        <input id="slider-height" type="range" min="15" max="150" value="65" class="w-full">
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex justify-between text-[11px]">
+          <span class="text-mono-600">感应变形半径</span>
+          <span id="val-radius" class="text-black font-mono font-medium">42m</span>
+        </div>
+        <input id="slider-radius" type="range" min="15" max="90" value="42" class="w-full">
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex justify-between text-[11px]">
+          <span class="text-mono-600">等高距间隔 (米)</span>
+          <span id="val-interval" class="text-black font-mono font-medium">12m</span>
+        </div>
+        <input id="slider-interval" type="range" min="5" max="30" value="12" class="w-full">
+      </div>
+    </div>
+
+    <!-- Display Options -->
+    <div class="space-y-2 pt-1 border-t border-black/5">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] text-mono-600">高程分层晕渲着色</span>
+        <button id="toggle-shading" class="mono-btn active px-2.5 py-0.5 text-[10px] rounded">已启用</button>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] text-mono-600">主等高线加粗标记</span>
+        <button id="toggle-major" class="mono-btn active px-2.5 py-0.5 text-[10px] rounded">5倍标记</button>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="flex space-x-2 pt-2 border-t border-black/5">
+      <button id="btn-trigger-pulse" class="mono-btn flex-1 py-1.5 text-xs text-black font-medium rounded-md">
+        激发地质声呐波
+      </button>
+      <button id="btn-reset-terrain" class="mono-btn px-3 py-1.5 text-xs text-mono-600 rounded-md" title="重置临时隆起">
+        复原
+      </button>
+    </div>
+  </aside>
+
+  <footer class="absolute bottom-4 left-6 right-6 z-20 flex flex-col md:flex-row items-stretch md:items-end justify-between gap-4 pointer-events-none">
+    <!-- Real-time Cross-section Profile Chart -->
+    <div class="mono-card p-3 w-full md:w-96 rounded-xl pointer-events-auto space-y-1.5 border border-black/10">
+      <div class="flex items-center justify-between text-[10px]">
+        <span class="text-mono-500 flex items-center space-x-1.5">
+          <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+          <span class="font-medium">剖面切片高程 (SECTION)</span>
+        </span>
+        <span id="profile-peak" class="text-black font-mono font-bold">PEAK: +128.4m</span>
+      </div>
+      <div class="w-full h-16 bg-[#FAFAFA] rounded-md border border-black/5 relative overflow-hidden">
+        <canvas id="profile-canvas" class="w-full h-full block"></canvas>
+        <div class="absolute inset-x-0 bottom-0 h-[1px] bg-mono-200"></div>
+        <div class="absolute left-1/2 inset-y-0 w-[1px] bg-black/25 border-dashed border-l"></div>
+      </div>
+      <div class="flex justify-between text-[8px] text-mono-400 font-mono">
+        <span>-200M (WEST)</span>
+        <span class="text-mono-700">▲ CURSOR</span>
+        <span>+200M (EAST)</span>
+      </div>
+    </div>
+
+    <!-- Right Side Telemetry Readout -->
+    <div class="mono-card px-4 py-2 rounded-xl pointer-events-auto flex items-center space-x-6 text-[10px] border border-black/10 self-end">
+      <div>
+        <div class="text-mono-400 text-[8px]">ELEVATION DELTA</div>
+        <div id="stat-max-h" class="font-bold text-black font-mono">+184.2 M</div>
+      </div>
+      <div>
+        <div class="text-mono-400 text-[8px]">ORBIT PITCH</div>
+        <div id="stat-pitch" class="font-bold text-black font-mono">0.0°</div>
+      </div>
+      <div class="border-l border-mono-200 pl-4 text-mono-500 text-[9px] font-mono">
+        TALOS AIC // SURVEY
+      </div>
+    </div>
+  </footer>
+
+  <script id="vertexShader" type="x-shader/x-vertex">
+    uniform float u_time;
+    uniform vec2 u_seed;
+    uniform int u_preset;
+    uniform vec2 u_mouse;
+    uniform float u_mouse_active;
+    uniform float u_mouse_height;
+    uniform float u_mouse_radius;
+    uniform int u_mode;
+    uniform vec4 u_ripples[4];
+
+    varying vec2 vUv;
+    varying float vElevation;
+    varying vec3 vNormalVec;
+    varying vec3 vWorldPos;
+
+    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
+
+    float snoise(vec2 v) {
+      const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+      vec2 i  = floor(v + dot(v, C.yy));
+      vec2 x0 = v -   i + dot(i, C.xx);
+      vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+      vec4 x12 = x0.xyxy + C.xxzz;
+      x12.xy -= i1;
+      i = mod289(i);
+      vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+      vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+      m = m * m;
+      m = m * m;
+      vec3 x = 2.0 * fract(p * C.www) - 1.0;
+      vec3 h = abs(x) - 0.5;
+      vec3 ox = floor(x + 0.5);
+      vec3 a0 = x - ox;
+      m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+      vec3 g;
+      g.x  = a0.x  * x0.x  + h.x  * x0.y;
+      g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+      return 130.0 * dot(m, g);
+    }
+
+    float ridgedNoise(vec2 p) {
+      return 1.0 - abs(snoise(p));
+    }
+
+    float getProceduralTerrain(vec2 p) {
+      vec2 pos = p + u_seed;
+      float h = 0.0;
+
+      if (u_preset == 0) {
+        float r1 = ridgedNoise(pos * 0.005);
+        float r2 = ridgedNoise(pos * 0.011 + vec2(3.1, -1.8));
+        float spine = pow(r1, 1.8) * 80.0;
+        float foothills = r2 * 26.0 + snoise(pos * 0.024) * 10.0;
+        float glacialValley = -pow(abs(snoise(pos * 0.0035 + vec2(-2.0, 1.4))), 2.0) * 36.0;
+        h = spine + foothills + glacialValley - 24.0;
+      } else if (u_preset == 1) {
+        float base = snoise(pos * 0.0045) * 55.0 + 20.0;
+        float stepped = floor(base / 18.0) * 18.0 + smoothstep(0.0, 4.0, mod(base, 18.0)) * 4.0;
+        float canyon = abs(snoise(pos * 0.0055 + vec2(1.5, -2.2)));
+        float canyonCarve = (1.0 - smoothstep(0.0, 0.22, canyon)) * 65.0;
+        h = stepped - canyonCarve + snoise(pos * 0.025) * 6.0;
+      } else if (u_preset == 2) {
+        float d = length(p);
+        float rim = exp(-pow((d - 88.0) / 28.0, 2.0)) * 75.0;
+        float centerPeak = exp(-pow(d / 24.0, 2.0)) * 45.0;
+        float bowl = -clamp(1.0 - d / 88.0, 0.0, 1.0) * 48.0;
+        float ejecta = snoise(pos * 0.01) * 22.0 + snoise(pos * 0.028) * 7.0;
+        h = rim + centerPeak + bowl + ejecta - 10.0;
+      } else {
+        float faultCoord = (pos.x * 0.8 + pos.y * 0.6) * 0.012;
+        float faultStep = floor(faultCoord) * 18.0 + smoothstep(0.0, 0.12, fract(faultCoord)) * 16.0;
+        float erosion = snoise(pos * 0.0075) * 32.0 + snoise(pos * 0.022) * 12.0;
+        h = faultStep + erosion - 22.0;
+      }
+
+      return h;
+    }
+
+    float calculateHeight(vec2 pos) {
+      float h = getProceduralTerrain(pos);
+
+      if (u_mouse_active > 0.01) {
+        float d = distance(pos, u_mouse);
+        float radius = u_mouse_radius;
+        if (d < radius * 2.5) {
+          float factor = exp(-pow(d / (radius * 0.75), 2.0));
+          float delta = factor * u_mouse_height * u_mouse_active;
+          if (u_mode == 1) {
+            h -= delta;
+          } else {
+            h += delta;
+          }
+        }
+      }
+
+      for (int i = 0; i < 4; i++) {
+        if (u_ripples[i].w > 0.01) {
+          float age = u_time - u_ripples[i].z;
+          if (age > 0.0 && age < 3.5) {
+            float dist = distance(pos, u_ripples[i].xy);
+            float waveSpeed = 95.0;
+            float wavePos = age * waveSpeed;
+            float waveDist = abs(dist - wavePos);
+            if (waveDist < 32.0) {
+              float rippleAmp = sin(waveDist * 0.35) * exp(-age * 1.1) * (1.0 - waveDist / 32.0) * u_ripples[i].w * 24.0;
+              h += rippleAmp;
+            }
+          }
+        }
+      }
+
+      return h;
+    }
+
+    void main() {
+      vUv = uv;
+      vec3 transformed = position;
+
+      vec2 worldXZ = position.xy;
+      float height = calculateHeight(worldXZ);
+      transformed.z = height;
+
+      float delta = 1.0;
+      float hR = calculateHeight(worldXZ + vec2(delta, 0.0));
+      float hU = calculateHeight(worldXZ + vec2(0.0, delta));
+      vec3 normalVec = normalize(vec3(height - hR, height - hU, delta));
+
+      vElevation = height;
+      vNormalVec = normalVec;
+      vWorldPos = transformed;
+
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
+    }
+  </script>
+
+  <script id="fragmentShader" type="x-shader/x-fragment">
+    uniform float u_time;
+    uniform float u_interval;
+    uniform float u_line_width;
+    uniform bool u_shading;
+    uniform bool u_major_lines;
+    uniform vec2 u_mouse;
+    uniform float u_mouse_active;
+
+    varying vec2 vUv;
+    varying float vElevation;
+    varying vec3 vNormalVec;
+    varying vec3 vWorldPos;
+
+    // Elegant monochrome architectural paper relief
+    vec3 getMonochromeRelief(float elevNorm) {
+      // Subtle paper-gray to pure architectural white
+      vec3 cValley = vec3(0.92, 0.93, 0.95);
+      vec3 cMid = vec3(0.96, 0.97, 0.98);
+      vec3 cPeak = vec3(1.0, 1.0, 1.0);
+      if (elevNorm < 0.5) return mix(cValley, cMid, elevNorm / 0.5);
+      return mix(cMid, cPeak, (elevNorm - 0.5) / 0.5);
+    }
+
+    void main() {
+      // Normalized elevation [-45m to +140m]
+      float elevNorm = clamp((vElevation + 45.0) / 185.0, 0.0, 1.0);
+      vec3 baseColor = u_shading ? getMonochromeRelief(elevNorm) : vec3(0.97, 0.975, 0.98);
+
+      // Soft architectural diffuse directional lighting
+      vec3 lightDir = normalize(vec3(-0.35, 0.5, 0.78));
+      float diffuse = max(dot(vNormalVec, lightDir), 0.25);
+      if (u_shading) {
+        baseColor *= (0.78 + 0.22 * diffuse);
+      }
+
+      // Crisp black screen-space contour lines
+      float val = vElevation / u_interval;
+      float fracVal = fract(val);
+      float lineDist = min(fracVal, 1.0 - fracVal);
+      float fw = fwidth(val);
+      float lineIntensity = 1.0 - smoothstep(0.0, fw * u_line_width, lineDist);
+
+      // Major index contours (every 5 intervals)
+      float majorIntensity = 0.0;
+      if (u_major_lines) {
+        float valMajor = val / 5.0;
+        float fracMajor = fract(valMajor);
+        float lineDistMajor = min(fracMajor, 1.0 - fracMajor);
+        float fwMajor = fwidth(valMajor);
+        majorIntensity = 1.0 - smoothstep(0.0, fwMajor * (u_line_width * 2.0), lineDistMajor);
+      }
+
+      // Pure stark black contour pigment
+      vec3 minorContourColor = vec3(0.25, 0.27, 0.30);
+      vec3 majorContourColor = vec3(0.05, 0.05, 0.05);
+
+      vec3 finalColor = baseColor;
+      finalColor = mix(finalColor, minorContourColor, lineIntensity * 0.7);
+      finalColor = mix(finalColor, majorContourColor, majorIntensity * 0.95);
+
+      // Subtle architectural coordinates grid
+      vec2 grid = abs(fract(vWorldPos.xy / 50.0 - 0.5) - 0.5) / fwidth(vWorldPos.xy / 50.0);
+      float gridLine = 1.0 - min(min(grid.x, grid.y), 1.0);
+      finalColor -= vec3(0.06) * gridLine * 0.35;
+
+      // Mouse proximity indicator ring
+      if (u_mouse_active > 0.01) {
+        float dMouse = distance(vWorldPos.xy, u_mouse);
+        float ringDist = abs(dMouse - 42.0);
+        float ring = 1.0 - smoothstep(0.0, 2.0, ringDist);
+        finalColor = mix(finalColor, vec3(0.0), ring * 0.35 * u_mouse_active);
+      }
+
+      // Floating tablet boundary clipping
+      float edgeX = smoothstep(195.0, 180.0, abs(vWorldPos.x));
+      float edgeY = smoothstep(195.0, 180.0, abs(vWorldPos.y));
+      float edgeMask = edgeX * edgeY;
+
+      gl_FragColor = vec4(finalColor, edgeMask * 0.98);
+    }
+  </script>
+
+  <script>
+    const State = {
+      viewMode: '2D',
+      interactionMode: 0,
+      primaryDragMode: 'elevate',
+      geologyPreset: 0,
+      seed: new THREE.Vector2(128.5, 439.2),
+      seedHex: '0x48A2',
+      mouseHeight: 65,
+      mouseRadius: 42,
+      contourInterval: 12,
+      shading: true,
+      majorLines: true,
+      mouseWorld: new THREE.Vector2(0, 0),
+      mouseActive: 0.0,
+      targetMouseActive: 0.0,
+      isMouseDown: false,
+      ripples: [
+        { x: 0, z: 0, time: -100, intensity: 0 },
+        { x: 0, z: 0, time: -100, intensity: 0 },
+        { x: 0, z: 0, time: -100, intensity: 0 },
+        { x: 0, z: 0, time: -100, intensity: 0 }
+      ],
+      rippleIndex: 0,
+      orbit: {
+        radius: 480,
+        targetRadius: 480,
+        theta: 0.0,
+        targetTheta: 0.0,
+        phi: 0.02,
+        targetPhi: 0.02,
+        targetLookAt: new THREE.Vector3(0, 0, 0),
+        currentLookAt: new THREE.Vector3(0, 0, 0)
+      }
+    };
+
+    // Minimalist Web Audio Synthesizer (Active by default, no mute options)
+    class SurveyAudio {
+      constructor() {
+        this.ctx = null;
+        this.rumbleOsc = null;
+        this.rumbleGain = null;
+        this.rumbleFilter = null;
+        this.lastPingTime = 0;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+          this.setupRumble();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      setupRumble() {
+        if (!this.ctx) return;
+        try {
+          this.rumbleOsc = this.ctx.createOscillator();
+          this.rumbleOsc.type = 'sine';
+          this.rumbleOsc.frequency.setValueAtTime(55, this.ctx.currentTime);
+
+          this.rumbleFilter = this.ctx.createBiquadFilter();
+          this.rumbleFilter.type = 'lowpass';
+          this.rumbleFilter.frequency.setValueAtTime(85, this.ctx.currentTime);
+
+          this.rumbleGain = this.ctx.createGain();
+          this.rumbleGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+
+          this.rumbleOsc.connect(this.rumbleFilter);
+          this.rumbleFilter.connect(this.rumbleGain);
+          this.rumbleGain.connect(this.ctx.destination);
+          this.rumbleOsc.start();
+        } catch(e) {}
+      }
+
+      updateRumble(active, intensity = 1.0) {
+        if (!this.ctx || !this.rumbleGain) return;
+        const now = this.ctx.currentTime;
+        if (active) {
+          const targetGain = Math.min(0.04 * intensity, 0.06);
+          this.rumbleGain.gain.setTargetAtTime(targetGain, now, 0.05);
+        } else {
+          this.rumbleGain.gain.setTargetAtTime(0.0001, now, 0.1);
+        }
+      }
+
+      playClick(freq = 900) {
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.03);
+
+          gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.03);
+        } catch(e) {}
+      }
+
+      playChime(elevation) {
+        this.init();
+        if (!this.ctx) return;
+        const now = performance.now();
+        if (now - this.lastPingTime < 90) return;
+        this.lastPingTime = now;
+
+        try {
+          const baseFreqs = [440.0, 493.88, 554.37, 659.25, 739.99, 880.0, 987.77];
+          const normElev = Math.max(0, Math.min(1, (elevation + 40) / 160));
+          const idx = Math.floor(normElev * (baseFreqs.length - 1));
+          const freq = baseFreqs[idx];
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(0.025, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.12);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.12);
+        } catch(e) {}
+      }
+
+      playPulse() {
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(35, this.ctx.currentTime + 0.35);
+
+          gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.38);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.38);
+        } catch(e) {}
+      }
+    }
+
+    const sound = new SurveyAudio();
+
+    const container = document.getElementById('viewport-container');
+    const canvas = document.getElementById('webgl-canvas');
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xF8F9FA);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+    camera.position.set(0, 0, State.orbit.radius);
+    camera.up.set(0, 1, 0);
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const planeGeo = new THREE.PlaneGeometry(400, 400, 240, 240);
+
+    const uniforms = {
+      u_time: { value: 0 },
+      u_seed: { value: State.seed },
+      u_preset: { value: State.geologyPreset },
+      u_mouse: { value: new THREE.Vector2(0, 0) },
+      u_mouse_active: { value: 0.0 },
+      u_mouse_height: { value: State.mouseHeight },
+      u_mouse_radius: { value: State.mouseRadius },
+      u_mode: { value: State.interactionMode },
+      u_interval: { value: State.contourInterval },
+      u_line_width: { value: 1.5 },
+      u_shading: { value: State.shading },
+      u_major_lines: { value: State.majorLines },
+      u_ripples: {
+        value: [
+          new THREE.Vector4(0, 0, -100, 0),
+          new THREE.Vector4(0, 0, -100, 0),
+          new THREE.Vector4(0, 0, -100, 0),
+          new THREE.Vector4(0, 0, -100, 0)
+        ]
+      }
+    };
+
+    const customMaterial = new THREE.ShaderMaterial({
+      vertexShader: document.getElementById('vertexShader').textContent,
+      fragmentShader: document.getElementById('fragmentShader').textContent,
+      uniforms: uniforms,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+
+    const terrainMesh = new THREE.Mesh(planeGeo, customMaterial);
+    scene.add(terrainMesh);
+
+    // Subtle hairline grid helper
+    const gridHelper = new THREE.GridHelper(440, 22, 0xD1D5DB, 0xE5E7EB);
+    gridHelper.rotation.x = Math.PI / 2;
+    gridHelper.position.z = -35;
+    scene.add(gridHelper);
+
+    const F2 = 0.5 * (Math.sqrt(3.0) - 1.0);
+    const G2 = (3.0 - Math.sqrt(3.0)) / 6.0;
+    const pTable = new Uint8Array(512);
+    for (let i = 0; i < 256; i++) pTable[i] = pTable[i + 256] = Math.floor(Math.abs(Math.sin(i * 12.9898) * 43758.5453)) % 256;
+
+    function cpuSimplex2D(xin, yin) {
+      let n0, n1, n2;
+      const s = (xin + yin) * F2;
+      const i = Math.floor(xin + s);
+      const j = Math.floor(yin + s);
+      const t = (i + j) * G2;
+      const X0 = i - t;
+      const Y0 = j - t;
+      const x0 = xin - X0;
+      const y0 = yin - Y0;
+      let i1, j1;
+      if (x0 > y0) { i1 = 1; j1 = 0; } else { i1 = 0; j1 = 1; }
+      const x1 = x0 - i1 + G2;
+      const y1 = y0 - j1 + G2;
+      const x2 = x0 - 1.0 + 2.0 * G2;
+      const y2 = y0 - 1.0 + 2.0 * G2;
+      const ii = i & 255;
+      const jj = j & 255;
+      const gi0 = pTable[ii + pTable[jj]] % 8;
+      const gi1 = pTable[ii + i1 + pTable[jj + j1]] % 8;
+      const gi2 = pTable[ii + 1 + pTable[jj + 1]] % 8;
+      const grad = [[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+      let t0 = 0.5 - x0 * x0 - y0 * y0;
+      if (t0 < 0) n0 = 0.0; else { t0 *= t0; n0 = t0 * t0 * (grad[gi0][0] * x0 + grad[gi0][1] * y0); }
+      let t1 = 0.5 - x1 * x1 - y1 * y1;
+      if (t1 < 0) n1 = 0.0; else { t1 *= t1; n1 = t1 * t1 * (grad[gi1][0] * x1 + grad[gi1][1] * y1); }
+      let t2 = 0.5 - x2 * x2 - y2 * y2;
+      if (t2 < 0) n2 = 0.0; else { t2 *= t2; n2 = t2 * t2 * (grad[gi2][0] * x2 + grad[gi2][1] * y2); }
+      return 70.0 * (n0 + n1 + n2);
+    }
+
+    function cpuRidged(x, y) {
+      return 1.0 - Math.abs(cpuSimplex2D(x, y));
+    }
+
+    function cpuTerrainHeight(x, y) {
+      const px = x + State.seed.x;
+      const py = y + State.seed.y;
+      let h = 0.0;
+
+      if (State.geologyPreset === 0) {
+        const r1 = cpuRidged(px * 0.005, py * 0.005);
+        const r2 = cpuRidged(px * 0.011 + 3.1, py * 0.011 - 1.8);
+        const spine = Math.pow(Math.max(0, r1), 1.8) * 80.0;
+        const foothills = r2 * 26.0 + cpuSimplex2D(px * 0.024, py * 0.024) * 10.0;
+        const glacialValley = -Math.pow(Math.abs(cpuSimplex2D(px * 0.0035 - 2.0, py * 0.0035 + 1.4)), 2.0) * 36.0;
+        h = spine + foothills + glacialValley - 24.0;
+      } else if (State.geologyPreset === 1) {
+        const base = cpuSimplex2D(px * 0.0045, py * 0.0045) * 55.0 + 20.0;
+        const stepped = Math.floor(base / 18.0) * 18.0 + Math.min(1, Math.max(0, (base % 18.0) / 4.0)) * 4.0;
+        const canyon = Math.abs(cpuSimplex2D(px * 0.0055 + 1.5, py * 0.0055 - 2.2));
+        const canyonCarve = Math.max(0, 1.0 - canyon / 0.22) * 65.0;
+        h = stepped - canyonCarve + cpuSimplex2D(px * 0.025, py * 0.025) * 6.0;
+      } else if (State.geologyPreset === 2) {
+        const d = Math.sqrt(x * x + y * y);
+        const rim = Math.exp(-Math.pow((d - 88.0) / 28.0, 2.0)) * 75.0;
+        const centerPeak = Math.exp(-Math.pow(d / 24.0, 2.0)) * 45.0;
+        const bowl = -Math.max(0, Math.min(1, 1.0 - d / 88.0)) * 48.0;
+        const ejecta = cpuSimplex2D(px * 0.01, py * 0.01) * 22.0 + cpuSimplex2D(px * 0.028, py * 0.028) * 7.0;
+        h = rim + centerPeak + bowl + ejecta - 10.0;
+      } else {
+        const faultCoord = (px * 0.8 + py * 0.6) * 0.012;
+        const faultStep = Math.floor(faultCoord) * 18.0 + Math.min(1, Math.max(0, (faultCoord % 1.0) / 0.12)) * 16.0;
+        const erosion = cpuSimplex2D(px * 0.0075, py * 0.0075) * 32.0 + cpuSimplex2D(px * 0.022, py * 0.022) * 12.0;
+        h = faultStep + erosion - 22.0;
+      }
+
+      if (State.mouseActive > 0.001) {
+        const dx = x - State.mouseWorld.x;
+        const dy = y - State.mouseWorld.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const radius = State.mouseRadius;
+        if (dist < radius * 2.5) {
+          const factor = Math.exp(-Math.pow(dist / (radius * 0.75), 2));
+          const delta = factor * State.mouseHeight * State.mouseActive;
+          if (State.interactionMode === 1) h -= delta;
+          else h += delta;
+        }
+      }
+      return h;
+    }
+
+    let isOrbitDragging = false;
+    let orbitLastX = 0;
+    let orbitLastY = 0;
+
+    function updateCameraPosition() {
+      const r = State.orbit.radius;
+      const phi = State.orbit.phi;
+      const theta = State.orbit.theta;
+
+      const sinPhi = Math.sin(phi);
+      const cosPhi = Math.cos(phi);
+      const x = r * sinPhi * Math.sin(theta);
+      const y = -r * sinPhi * Math.cos(theta);
+      const z = r * cosPhi;
+
+      camera.position.set(x, y, z);
+      camera.up.set(0, 0, 1);
+      camera.lookAt(State.orbit.currentLookAt);
+
+      const hdgDeg = Math.round(((-theta * 180 / Math.PI) % 360 + 360) % 360);
+      const pitchDeg = Math.round(phi * 180 / Math.PI);
+      document.getElementById('compass-hdg').textContent = `${String(hdgDeg).padStart(3, '0')}°`;
+      document.getElementById('stat-pitch').textContent = `${pitchDeg}.0°`;
+
+      const compassDisc = document.getElementById('compass-disc');
+      if (compassDisc) {
+        compassDisc.style.transform = `rotate(${hdgDeg}deg)`;
+      }
+    }
+
+    // View Switching
+    const btnView2D = document.getElementById('btn-view-2d');
+    const btnView3D = document.getElementById('btn-view-3d');
+
+    function setViewMode(mode) {
+      State.viewMode = mode;
+      if (mode === '2D') {
+        btnView2D.classList.add('active');
+        btnView3D.classList.remove('active');
+        State.orbit.targetPhi = 0.02;
+        State.orbit.targetRadius = 480;
+      } else {
+        btnView3D.classList.add('active');
+        btnView2D.classList.remove('active');
+        State.orbit.targetPhi = 0.95;
+        State.orbit.targetRadius = 380;
+      }
+      sound.playClick(mode === '2D' ? 680 : 920);
+    }
+
+    btnView2D.addEventListener('click', () => setViewMode('2D'));
+    btnView3D.addEventListener('click', () => setViewMode('3D'));
+
+    // Camera Snaps
+    document.getElementById('cam-snap-n').addEventListener('click', () => {
+      State.orbit.targetTheta = 0.0;
+      State.orbit.targetPhi = State.viewMode === '2D' ? 0.02 : 0.95;
+      sound.playClick(800);
+    });
+    document.getElementById('cam-snap-iso').addEventListener('click', () => {
+      State.viewMode = '3D';
+      btnView3D.classList.add('active');
+      btnView2D.classList.remove('active');
+      State.orbit.targetTheta = Math.PI / 4;
+      State.orbit.targetPhi = 0.85;
+      State.orbit.targetRadius = 360;
+      sound.playClick(960);
+    });
+    document.getElementById('cam-snap-low').addEventListener('click', () => {
+      State.viewMode = '3D';
+      btnView3D.classList.add('active');
+      btnView2D.classList.remove('active');
+      State.orbit.targetPhi = 1.35;
+      State.orbit.targetRadius = 340;
+      sound.playClick(750);
+    });
+    document.getElementById('cam-snap-side').addEventListener('click', () => {
+      State.orbit.targetTheta = Math.PI / 2;
+      State.orbit.targetPhi = 1.45;
+      sound.playClick(620);
+    });
+
+    // Primary drag toggle
+    const btnDragElevate = document.getElementById('btn-drag-elevate');
+    const btnDragOrbit = document.getElementById('btn-drag-orbit');
+    btnDragElevate.addEventListener('click', () => {
+      State.primaryDragMode = 'elevate';
+      btnDragElevate.classList.add('bg-black', 'text-white');
+      btnDragElevate.classList.remove('text-mono-500');
+      btnDragOrbit.classList.remove('bg-black', 'text-white');
+      btnDragOrbit.classList.add('text-mono-500');
+      sound.playClick(500);
+    });
+    btnDragOrbit.addEventListener('click', () => {
+      State.primaryDragMode = 'orbit';
+      btnDragOrbit.classList.add('bg-black', 'text-white');
+      btnDragOrbit.classList.remove('text-mono-500');
+      btnDragElevate.classList.remove('bg-black', 'text-white');
+      btnDragElevate.classList.add('text-mono-500');
+      sound.playClick(500);
+    });
+
+    const raycaster = new THREE.Raycaster();
+    const mouseNorm = new THREE.Vector2(-999, -999);
+    const planeIntersection = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+
+    const tacticalCursor = document.getElementById('tactical-cursor');
+    const hudCoords = document.getElementById('hud-coords');
+    const hudElev = document.getElementById('hud-elev');
+
+    function onPointerMove(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      if (clientX === undefined) return;
+
+      if (isOrbitDragging) {
+        const deltaX = clientX - orbitLastX;
+        const deltaY = clientY - orbitLastY;
+        orbitLastX = clientX;
+        orbitLastY = clientY;
+
+        State.orbit.targetTheta -= deltaX * 0.008;
+        const maxPhi = State.viewMode === '2D' ? 0.45 : 1.48;
+        const minPhi = 0.02;
+        State.orbit.targetPhi = Math.max(minPhi, Math.min(maxPhi, State.orbit.targetPhi + deltaY * 0.008));
+        return;
+      }
+
+      mouseNorm.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      mouseNorm.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+      tacticalCursor.style.left = `${clientX}px`;
+      tacticalCursor.style.top = `${clientY}px`;
+      tacticalCursor.classList.remove('opacity-0');
+
+      raycaster.setFromCamera(mouseNorm, camera);
+      const intersectionPoint = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(planeIntersection, intersectionPoint)) {
+        if (Math.abs(intersectionPoint.x) <= 200 && Math.abs(intersectionPoint.y) <= 200) {
+          State.mouseWorld.set(intersectionPoint.x, intersectionPoint.y);
+          State.targetMouseActive = 1.0;
+
+          const curH = cpuTerrainHeight(intersectionPoint.x, intersectionPoint.y);
+          hudCoords.textContent = `X:${intersectionPoint.x.toFixed(1)} | Y:${intersectionPoint.y.toFixed(1)}`;
+          hudElev.textContent = `${curH >= 0 ? '+' : ''}${curH.toFixed(2)} M`;
+
+          sound.playChime(curH);
+
+          if (State.isMouseDown) {
+            sound.updateRumble(true, 1.2);
+          }
+        } else {
+          State.targetMouseActive = 0.0;
+          sound.updateRumble(false);
+        }
+      }
+    }
+
+    function triggerRipple(x, y) {
+      const idx = State.rippleIndex;
+      State.ripples[idx].x = x;
+      State.ripples[idx].z = y;
+      State.ripples[idx].time = uniforms.u_time.value;
+      State.ripples[idx].intensity = 1.0;
+      uniforms.u_ripples.value[idx].set(x, y, State.ripples[idx].time, 1.0);
+      State.rippleIndex = (State.rippleIndex + 1) % 4;
+      sound.playPulse();
+    }
+
+    window.addEventListener('mousedown', (e) => {
+      sound.init();
+      if (e.target !== canvas && !e.target.closest('#viewport-container') && !e.target.closest('#compass-widget')) return;
+
+      if (e.button === 2 || State.primaryDragMode === 'orbit' || e.target.closest('#compass-widget')) {
+        isOrbitDragging = true;
+        orbitLastX = e.clientX;
+        orbitLastY = e.clientY;
+        tacticalCursor.classList.add('opacity-0');
+        e.preventDefault();
+        return;
+      }
+
+      if (e.button === 0) {
+        State.isMouseDown = true;
+        if (State.interactionMode === 2) {
+          triggerRipple(State.mouseWorld.x, State.mouseWorld.y);
+        } else {
+          sound.updateRumble(true, 1.0);
+        }
+      }
+    });
+
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('contextmenu', (e) => {
+      if (e.target === canvas || e.target.closest('#viewport-container') || e.target.closest('#compass-widget')) {
+        e.preventDefault();
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      isOrbitDragging = false;
+      State.isMouseDown = false;
+      sound.updateRumble(false);
+    });
+
+    window.addEventListener('wheel', (e) => {
+      if (e.target !== canvas && !e.target.closest('#viewport-container')) return;
+      const zoomFactor = e.deltaY * 0.35;
+      State.orbit.targetRadius = Math.max(140, Math.min(780, State.orbit.targetRadius + zoomFactor));
+    }, { passive: true });
+
+    function randomizeTerrain() {
+      const randX = (Math.random() - 0.5) * 2000.0;
+      const randY = (Math.random() - 0.5) * 2000.0;
+      State.seed.set(randX, randY);
+      uniforms.u_seed.value.copy(State.seed);
+
+      const hexSeed = '0x' + Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+      State.seedHex = hexSeed;
+      document.getElementById('lbl-seed').textContent = hexSeed;
+
+      sound.playPulse();
+      triggerRipple(0, 0);
+    }
+
+    document.getElementById('btn-random-terrain').addEventListener('click', randomizeTerrain);
+
+    // Initial Guidance Modal Dismiss
+    const guideModal = document.getElementById('guide-modal');
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      sound.init();
+      sound.playClick(1000);
+      guideModal.classList.add('fade-out');
+      setTimeout(() => guideModal.remove(), 300);
+    });
+
+    // Presets
+    const presetNames = [
+      '高地山脊 (RIDGE)',
+      '侵蚀台地 (MESA)',
+      '火山口盆地 (CALDERA)',
+      '断裂构造带 (FAULT)'
+    ];
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        presetBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const pIdx = parseInt(btn.dataset.preset, 10);
+        State.geologyPreset = pIdx;
+        uniforms.u_preset.value = pIdx;
+        document.getElementById('lbl-biome').textContent = presetNames[pIdx];
+        sound.playClick(850);
+      });
+    });
+
+    // Modes
+    const modeBtns = [
+      { id: 'mode-raise', mode: 0 },
+      { id: 'mode-crater', mode: 1 },
+      { id: 'mode-ripple', mode: 2 }
+    ];
+    modeBtns.forEach(item => {
+      const btn = document.getElementById(item.id);
+      btn.addEventListener('click', () => {
+        modeBtns.forEach(b => document.getElementById(b.id).classList.remove('active'));
+        btn.classList.add('active');
+        State.interactionMode = item.mode;
+        uniforms.u_mode.value = item.mode;
+        sound.playClick(720);
+      });
+    });
+
+    // Sliders
+    const sliderHeight = document.getElementById('slider-height');
+    const valHeight = document.getElementById('val-height');
+    sliderHeight.addEventListener('input', (e) => {
+      State.mouseHeight = parseFloat(e.target.value);
+      valHeight.textContent = `+${State.mouseHeight}m`;
+      uniforms.u_mouse_height.value = State.mouseHeight;
+    });
+
+    const sliderRadius = document.getElementById('slider-radius');
+    const valRadius = document.getElementById('val-radius');
+    sliderRadius.addEventListener('input', (e) => {
+      State.mouseRadius = parseFloat(e.target.value);
+      valRadius.textContent = `${State.mouseRadius}m`;
+      uniforms.u_mouse_radius.value = State.mouseRadius;
+    });
+
+    const sliderInterval = document.getElementById('slider-interval');
+    const valInterval = document.getElementById('val-interval');
+    sliderInterval.addEventListener('input', (e) => {
+      State.contourInterval = parseFloat(e.target.value);
+      valInterval.textContent = `${State.contourInterval}m`;
+      uniforms.u_interval.value = State.contourInterval;
+    });
+
+    // Toggles
+    const toggleShading = document.getElementById('toggle-shading');
+    toggleShading.addEventListener('click', () => {
+      State.shading = !State.shading;
+      uniforms.u_shading.value = State.shading;
+      toggleShading.textContent = State.shading ? '已启用' : '已关闭';
+      toggleShading.classList.toggle('active', State.shading);
+      sound.playClick(600);
+    });
+
+    const toggleMajor = document.getElementById('toggle-major');
+    toggleMajor.addEventListener('click', () => {
+      State.majorLines = !State.majorLines;
+      uniforms.u_major_lines.value = State.majorLines;
+      toggleMajor.textContent = State.majorLines ? '5倍标记' : '单倍等高';
+      toggleMajor.classList.toggle('active', State.majorLines);
+      sound.playClick(600);
+    });
+
+    document.getElementById('btn-trigger-pulse').addEventListener('click', () => {
+      triggerRipple(State.mouseWorld.x, State.mouseWorld.y);
+    });
+
+    document.getElementById('btn-reset-terrain').addEventListener('click', () => {
+      State.mouseActive = 0.0;
+      State.targetMouseActive = 0.0;
+      sound.playClick(450);
+    });
+
+    const profileCanvas = document.getElementById('profile-canvas');
+    const pCtx = profileCanvas.getContext('2d');
+    const profilePeak = document.getElementById('profile-peak');
+    const statMaxH = document.getElementById('stat-max-h');
+
+    function updateProfileGraph() {
+      if (!profileCanvas) return;
+      const w = profileCanvas.width = profileCanvas.clientWidth * 2;
+      const h = profileCanvas.height = profileCanvas.clientHeight * 2;
+
+      pCtx.clearRect(0, 0, w, h);
+
+      const samples = 70;
+      const curY = State.mouseWorld.y;
+      const xStart = -190;
+      const xEnd = 190;
+      let maxElev = -999;
+
+      pCtx.beginPath();
+      pCtx.lineWidth = 2.5;
+      pCtx.strokeStyle = '#0A0A0A';
+
+      for (let i = 0; i <= samples; i++) {
+        const t = i / samples;
+        const wx = xStart + t * (xEnd - xStart);
+        const elev = cpuTerrainHeight(wx, curY);
+        if (elev > maxElev) maxElev = elev;
+
+        const py = h - ((elev + 45) / 185) * h;
+        const px = t * w;
+
+        if (i === 0) pCtx.moveTo(px, py);
+        else pCtx.lineTo(px, py);
+      }
+      pCtx.stroke();
+
+      pCtx.lineTo(w, h);
+      pCtx.lineTo(0, h);
+      pCtx.closePath();
+      const grad = pCtx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0.08)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
+      pCtx.fillStyle = grad;
+      pCtx.fill();
+
+      // Current mouse coordinate point marker
+      const normMouseX = (State.mouseWorld.x - xStart) / (xEnd - xStart);
+      const markX = Math.max(0, Math.min(w, normMouseX * w));
+      const curMouseH = cpuTerrainHeight(State.mouseWorld.x, State.mouseWorld.y);
+      const markY = h - ((curMouseH + 45) / 185) * h;
+
+      pCtx.beginPath();
+      pCtx.arc(markX, markY, 5, 0, Math.PI * 2);
+      pCtx.fillStyle = '#0A0A0A';
+      pCtx.fill();
+
+      profilePeak.textContent = `PEAK: ${maxElev >= 0 ? '+' : ''}${maxElev.toFixed(1)}m`;
+      statMaxH.textContent = `${maxElev >= 0 ? '+' : ''}${maxElev.toFixed(1)} M`;
+    }
+
+    window.addEventListener('resize', () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+
+    const timeEl = document.getElementById('system-time');
+    let solSeconds = 48200;
+    setInterval(() => {
+      solSeconds++;
+      const hrs = String(Math.floor((solSeconds / 3600) % 24)).padStart(2, '0');
+      const mins = String(Math.floor((solSeconds / 60) % 60)).padStart(2, '0');
+      const secs = String(solSeconds % 60).padStart(2, '0');
+      timeEl.textContent = `${hrs}:${mins}:${secs} SOL`;
+    }, 1000);
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const elapsedTime = clock.getElapsedTime();
+      uniforms.u_time.value = elapsedTime;
+
+      uniforms.u_mouse.value.lerp(State.mouseWorld, 0.22);
+
+      let targetHeight = State.mouseHeight;
+      if (State.isMouseDown && State.interactionMode !== 2 && State.primaryDragMode === 'elevate') {
+        targetHeight *= 1.45;
+      }
+      uniforms.u_mouse_height.value += (targetHeight - uniforms.u_mouse_height.value) * 0.15;
+
+      State.mouseActive += (State.targetMouseActive - State.mouseActive) * 0.12;
+      uniforms.u_mouse_active.value = State.mouseActive;
+
+      State.orbit.radius += (State.orbit.targetRadius - State.orbit.radius) * 0.1;
+      State.orbit.theta += (State.orbit.targetTheta - State.orbit.theta) * 0.12;
+      State.orbit.phi += (State.orbit.targetPhi - State.orbit.phi) * 0.12;
+      State.orbit.currentLookAt.lerp(State.orbit.targetLookAt, 0.1);
+
+      updateCameraPosition();
+      renderer.render(scene, camera);
+      updateProfileGraph();
+    }
+
+    window.addEventListener('load', () => {
+      animate();
+    });
+  </script>
+</body>
+</html>

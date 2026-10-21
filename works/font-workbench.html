@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TALOS AIC // TYPE METRICS // 双字体工程交互工作台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            mono: {
+              50: '#F9FAFB',
+              100: '#F3F4F6',
+              200: '#E5E7EB',
+              300: '#D1D5DB',
+              400: '#9CA3AF',
+              500: '#6B7280',
+              600: '#4B5563',
+              700: '#374151',
+              800: '#1F2937',
+              900: '#111827',
+              950: '#0A0A0A',
+            }
+          },
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      background-color: #F8F9FA;
+      color: #111827;
+      font-family: 'JetBrains Mono', 'Inter', monospace;
+    }
+
+    /* Minimalist frosted white paper card */
+    .mono-card {
+      background: rgba(255, 255, 255, 0.90);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    /* Crisp minimalist button */
+    .mono-btn {
+      position: relative;
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      color: #374151;
+      transition: all 0.15s ease-in-out;
+      cursor: pointer;
+    }
+    .mono-btn:hover {
+      background: #F3F4F6;
+      border-color: #9CA3AF;
+      color: #0A0A0A;
+    }
+    .mono-btn.active {
+      background: #0A0A0A;
+      color: #FFFFFF;
+      border-color: #0A0A0A;
+    }
+
+    /* Architectural grid background */
+    .architectural-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.02);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D1D5DB;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9CA3AF;
+    }
+
+    /* Glyph cell */
+    .glyph-item {
+      aspect-ratio: 1 / 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: #FFFFFF;
+      transition: all 0.1s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .glyph-item:hover {
+      border-color: #0A0A0A;
+      background: #F9FAFB;
+      z-index: 10;
+    }
+    .glyph-item.selected {
+      border-color: #0A0A0A;
+      background: #F3F4F6;
+      box-shadow: inset 0 0 0 1px #0A0A0A;
+    }
+  </style>
+</head>
+
+<body class="w-screen h-screen flex flex-col relative select-none bg-[#F8F9FA] overflow-hidden">
+
+  <!-- Architectural Background Grid -->
+  <div class="absolute inset-0 architectural-grid pointer-events-none z-0"></div>
+
+  <!-- Top Header Navigation -->
+  <header class="relative z-20 w-full px-6 py-3 flex items-center justify-between border-b border-black/[0.06] bg-white/80 backdrop-blur-md">
+    <!-- Left: Branding & Meta -->
+    <div class="flex items-center space-x-4">
+      <div class="w-2.5 h-6 bg-black"></div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-sans font-bold text-base tracking-wider text-black">TALOS FONT STUDIO</span>
+          <span class="text-[10px] px-1.5 py-0.5 bg-black/5 text-mono-700 border border-black/10 rounded font-mono font-medium">TYPE-AIC-v2.0</span>
+        </div>
+        <div class="text-[10px] text-mono-400 tracking-wider flex items-center space-x-2.5 mt-0.5">
+          <span>SPEC: <strong class="text-black font-mono font-semibold">OPENTYPE // TTF</strong></span>
+          <span class="text-mono-300">/</span>
+          <span id="lbl-status" class="text-mono-600 font-medium">就绪 (STANDBY)</span>
+          <span class="text-mono-300">/</span>
+          <span id="system-time" class="text-mono-500">00:00:00 UTC</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Operational Controls -->
+    <div class="flex items-center space-x-2">
+      <button id="btn-load-sample" class="mono-btn px-3 py-1.5 text-xs text-black font-semibold rounded-md flex items-center space-x-1.5 shadow-sm" title="一键载入工程测试字型 A 与 B">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+        <span>载入基准测试字体</span>
+      </button>
+
+      <div class="flex items-center p-0.5 bg-mono-100 border border-black/5 rounded-md space-x-0.5 text-xs">
+        <button id="btn-scale-toggle" class="mono-btn active px-2.5 py-1 text-[11px] rounded" title="按单位网格 (UnitsPerEm) 比例自动缩放迁移字形尺寸">
+          UPM 等比自适应: 开
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Telemetry & Status Badges -->
+    <div class="flex items-center space-x-3 text-xs">
+      <div class="hidden lg:flex items-center space-x-1.5 pl-2 text-[10px] text-mono-400 font-mono">
+        <span class="w-1.5 h-1.5 rounded-full bg-black/60"></span>
+        <span>VECTOR COMPILER READY</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Multi-Column Workspace -->
+  <main class="relative z-10 flex-1 flex overflow-hidden p-4 gap-4">
+
+    <!-- Column 1: Font A Workcell -->
+    <section class="w-1/3 flex flex-col mono-card rounded-xl border border-black/10 overflow-hidden">
+      <!-- Card Header -->
+      <div class="p-3 border-b border-black/5 flex items-center justify-between bg-white/70">
+        <div class="flex items-center space-x-2">
+          <span class="w-2 h-3.5 bg-black"></span>
+          <span class="font-bold text-xs tracking-wider text-black">FONT [A] 资源库</span>
+          <span id="badge-a-glyphs" class="text-[9px] px-1.5 py-0.2 bg-black/5 text-mono-600 rounded font-mono">0 字形</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <input type="file" id="input-font-a" class="hidden" accept=".ttf,.otf,.woff">
+          <button onclick="document.getElementById('input-font-a').click()" class="mono-btn px-2 py-0.5 text-[11px] rounded">
+            上传文件
+          </button>
+          <button id="btn-export-a" class="mono-btn px-2 py-0.5 text-[11px] rounded opacity-50 cursor-not-allowed" disabled>
+            导出
+          </button>
+        </div>
+      </div>
+
+      <!-- Telemetry Info -->
+      <div class="px-3 py-2 bg-mono-50/50 border-b border-black/5 flex items-center justify-between text-[10px] text-mono-500 font-mono">
+        <div class="truncate max-w-[140px]" id="info-a-name">NAME: --</div>
+        <div id="info-a-upm">UPM: --</div>
+        <div id="info-a-sel" class="text-black font-semibold">SEL: 0</div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="p-2 border-b border-black/5 flex items-center gap-1.5 bg-white/50">
+        <input id="search-a" type="text" placeholder="检索字符 / Hex (如: A, 0041)" class="flex-1 bg-white border border-black/10 rounded px-2 py-1 text-xs font-mono outline-none focus:border-black">
+        <button id="btn-sel-all-a" class="mono-btn px-2 py-1 text-[10px] rounded">全选</button>
+        <button id="btn-clear-sel-a" class="mono-btn px-2 py-1 text-[10px] rounded">清空</button>
+      </div>
+
+      <!-- Glyph Grid Container -->
+      <div class="flex-1 overflow-y-auto p-2 bg-[#FAFAFA]" id="container-glyphs-a">
+        <div class="h-full flex flex-col items-center justify-center text-mono-400 text-xs font-mono space-y-2">
+          <svg class="w-8 h-8 stroke-1 text-mono-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          <span>请上传字体文件 A 或载入基准测试</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Column 2: Center Inspector & Cross-Transfer Engine -->
+    <section class="w-1/3 flex flex-col gap-4 overflow-hidden">
+
+      <!-- Transfer Operations Hub -->
+      <div class="mono-card p-3.5 rounded-xl border border-black/10 space-y-2.5">
+        <div class="flex items-center justify-between border-b border-black/5 pb-1.5">
+          <span class="text-[10px] font-bold text-mono-600 uppercase tracking-wider font-mono">字形交叉移植操作台</span>
+          <span class="text-[9px] text-mono-400 font-mono">DISPATCHER</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-transfer-a-to-b" class="mono-btn py-2 px-2 text-xs font-semibold rounded flex items-center justify-center space-x-1">
+            <span>A 移植至 B (A ➔ B)</span>
+          </button>
+          <button id="btn-transfer-b-to-a" class="mono-btn py-2 px-2 text-xs font-semibold rounded flex items-center justify-center space-x-1">
+            <span>B 移植至 A (B ➔ A)</span>
+          </button>
+        </div>
+        <button id="btn-fill-missing" class="w-full mono-btn py-1.5 text-xs text-mono-700 rounded flex items-center justify-center space-x-1">
+          <span>用 [A] 自动补全 [B] 缺失的全部字形</span>
+        </button>
+      </div>
+
+      <!-- Vector Inspector Canvas Card -->
+      <div class="flex-1 mono-card rounded-xl border border-black/10 flex flex-col overflow-hidden p-3 space-y-2">
+        <div class="flex items-center justify-between border-b border-black/5 pb-2">
+          <div class="flex items-center space-x-1.5">
+            <span class="w-1.5 h-1.5 bg-black rounded-full"></span>
+            <span class="text-xs font-bold uppercase tracking-wider text-black">字形矢量度量剖面</span>
+          </div>
+          <div class="text-[10px] font-mono text-mono-500" id="lbl-inspect-char">
+            SELECTED: NONE
+          </div>
+        </div>
+
+        <!-- Canvas Frame with Technical Rulers -->
+        <div class="flex-1 w-full bg-[#FFFFFF] border border-black/5 rounded-lg relative overflow-hidden flex items-center justify-center">
+          <canvas id="canvas-inspector" class="w-full h-full block"></canvas>
+          <!-- Metric Readouts HUD -->
+          <div class="absolute bottom-2 left-2 text-[9px] font-mono text-mono-400 space-y-0.5 bg-white/90 p-1.5 rounded border border-black/5 backdrop-blur">
+            <div>ADVANCE: <span id="metric-adv" class="text-black font-semibold">--</span></div>
+            <div>BOUNDS: <span id="metric-bounds" class="text-black font-semibold">--</span></div>
+          </div>
+        </div>
+
+        <!-- Layer legend -->
+        <div class="flex items-center justify-between text-[9px] font-mono text-mono-500 pt-1">
+          <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center"><span class="w-2 h-0.5 bg-black mr-1"></span> 字形轮廓</span>
+            <span class="inline-flex items-center"><span class="w-2 h-0.5 bg-red-400 mr-1"></span> 基准轴</span>
+          </div>
+          <span>GRID: 1:1 METRIC</span>
+        </div>
+      </div>
+
+      <!-- Real-time Text Renderer Playground -->
+      <div class="mono-card p-3 rounded-xl border border-black/10 space-y-2">
+        <div class="flex items-center justify-between text-[10px]">
+          <span class="font-bold text-mono-600 uppercase font-mono">排版即时渲染校验</span>
+          <div class="flex space-x-1 text-[9px]">
+            <button id="toggle-preview-font-a" class="mono-btn px-1.5 py-0.5 rounded">字体 A</button>
+            <button id="toggle-preview-font-b" class="mono-btn active px-1.5 py-0.5 rounded">字体 B</button>
+          </div>
+        </div>
+        <input id="input-preview-text" type="text" value="TALOS 012345 AIC" class="w-full bg-white border border-black/10 rounded px-2.5 py-1 text-xs font-mono outline-none focus:border-black">
+        <div class="w-full h-12 bg-white border border-black/5 rounded flex items-center justify-center px-2 overflow-x-auto overflow-y-hidden">
+          <canvas id="canvas-text-preview" class="h-10 w-full block"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Column 3: Font B Workcell -->
+    <section class="w-1/3 flex flex-col mono-card rounded-xl border border-black/10 overflow-hidden">
+      <!-- Card Header -->
+      <div class="p-3 border-b border-black/5 flex items-center justify-between bg-white/70">
+        <div class="flex items-center space-x-2">
+          <span class="w-2 h-3.5 bg-black"></span>
+          <span class="font-bold text-xs tracking-wider text-black">FONT [B] 目标工件</span>
+          <span id="badge-b-glyphs" class="text-[9px] px-1.5 py-0.2 bg-black/5 text-mono-600 rounded font-mono">0 字形</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <input type="file" id="input-font-b" class="hidden" accept=".ttf,.otf,.woff">
+          <button onclick="document.getElementById('input-font-b').click()" class="mono-btn px-2 py-0.5 text-[11px] rounded">
+            上传文件
+          </button>
+          <button id="btn-export-b" class="mono-btn px-2 py-0.5 text-[11px] rounded opacity-50 cursor-not-allowed" disabled>
+            导出
+          </button>
+        </div>
+      </div>
+
+      <!-- Telemetry Info -->
+      <div class="px-3 py-2 bg-mono-50/50 border-b border-black/5 flex items-center justify-between text-[10px] text-mono-500 font-mono">
+        <div class="truncate max-w-[140px]" id="info-b-name">NAME: --</div>
+        <div id="info-b-upm">UPM: --</div>
+        <div id="info-b-sel" class="text-black font-semibold">SEL: 0</div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="p-2 border-b border-black/5 flex items-center gap-1.5 bg-white/50">
+        <input id="search-b" type="text" placeholder="检索字符 / Hex (如: A, 0041)" class="flex-1 bg-white border border-black/10 rounded px-2 py-1 text-xs font-mono outline-none focus:border-black">
+        <button id="btn-sel-all-b" class="mono-btn px-2 py-1 text-[10px] rounded">全选</button>
+        <button id="btn-clear-sel-b" class="mono-btn px-2 py-1 text-[10px] rounded">清空</button>
+      </div>
+
+      <!-- Glyph Grid Container -->
+      <div class="flex-1 overflow-y-auto p-2 bg-[#FAFAFA]" id="container-glyphs-b">
+        <div class="h-full flex flex-col items-center justify-center text-mono-400 text-xs font-mono space-y-2">
+          <svg class="w-8 h-8 stroke-1 text-mono-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          <span>请上传字体文件 B 或载入基准测试</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Log & Status Readout -->
+  <footer class="relative z-20 w-full px-6 py-2 border-t border-black/[0.06] bg-white/80 backdrop-blur flex items-center justify-between text-[10px] font-mono text-mono-500">
+    <div class="flex items-center space-x-3">
+      <span class="text-black font-semibold">LOG:</span>
+      <span id="footer-log" class="text-mono-600">系统就绪，等待字体加载。</span>
+    </div>
+    <div class="flex items-center space-x-4">
+      <div>MEM-USAGE: <span class="text-black">OPTIMAL</span></div>
+      <div>CORE: <span class="text-black">OPENTYPE.JS</span></div>
+      <div class="border-l border-mono-200 pl-4 text-mono-400">AIC // TYPE LAB</div>
+    </div>
+  </footer>
+
+  <script>
+    // System State
+    const AppState = {
+      fontA: null,
+      fontB: null,
+      glyphsA: [],
+      glyphsB: [],
+      selectedA: new Set(),
+      selectedB: new Set(),
+      scaleNormalize: true,
+      currentInspectGlyph: null,
+      currentInspectSource: 'A',
+      previewTargetFont: 'B'
+    };
+
+    // UI Log helper
+    function log(msg) {
+      document.getElementById('footer-log').textContent = msg;
+    }
+
+    // Time ticker
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('system-time').textContent = now.toTimeString().split(' ')[0] + ' UTC';
+    }, 1000);
+
+    // Toggle Scale Normalization
+    const btnScale = document.getElementById('btn-scale-toggle');
+    btnScale.addEventListener('click', () => {
+      AppState.scaleNormalize = !AppState.scaleNormalize;
+      btnScale.textContent = `UPM 等比自适应: ${AppState.scaleNormalize ? '开' : '关'}`;
+      btnScale.classList.toggle('active', AppState.scaleNormalize);
+    });
+
+    // Helper: Unicode to legible character or hex string
+    function getGlyphChar(glyph) {
+      if (glyph.unicode !== undefined && glyph.unicode !== 0) {
+        return String.fromCharCode(glyph.unicode);
+      }
+      return glyph.name || '?';
+    }
+
+    // Render Mini Glyph Canvas
+    function renderGlyphCanvas(canvas, glyph, font) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = 44;
+      const h = canvas.height = 44;
+      ctx.clearRect(0, 0, w, h);
+
+      if (!glyph || !font) return;
+      const upm = font.unitsPerEm || 1000;
+      const scale = (h * 0.72) / upm;
+      const x = (w - ((glyph.advanceWidth || upm * 0.5) * scale)) / 2;
+      const y = h * 0.75;
+
+      ctx.fillStyle = '#0A0A0A';
+      try {
+        const path = glyph.getPath(x, y, upm * scale);
+        path.fill = '#0A0A0A';
+        path.draw(ctx);
+      } catch (err) {}
+    }
+
+    // Render Grid for Font Workcell
+    function renderGlyphGrid(target, font, list, selectedSet) {
+      const container = document.getElementById(`container-glyphs-${target}`);
+      container.innerHTML = '';
+
+      if (!font || list.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-mono-400 text-xs">无符合条件的字形</div>`;
+        return;
+      }
+
+      const grid = document.createElement('div');
+      grid.className = 'grid grid-cols-5 gap-1.5';
+
+      list.forEach((glyph) => {
+        const char = getGlyphChar(glyph);
+        const hex = glyph.unicode ? glyph.unicode.toString(16).toUpperCase().padStart(4, '0') : '----';
+        const isSelected = selectedSet.has(glyph.index);
+
+        const cell = document.createElement('div');
+        cell.className = `glyph-item rounded ${isSelected ? 'selected' : ''}`;
+        cell.title = `Char: ${char}\nHex: 0x${hex}\nName: ${glyph.name}`;
+
+        const cvs = document.createElement('canvas');
+        cvs.className = 'w-9 h-9 pointer-events-none mt-1';
+        renderGlyphCanvas(cvs, glyph, font);
+
+        const lbl = document.createElement('div');
+        lbl.className = 'text-[9px] font-mono text-mono-400 pb-0.5 truncate max-w-full px-1';
+        lbl.textContent = glyph.unicode ? hex : glyph.name.substring(0, 4);
+
+        cell.appendChild(cvs);
+        cell.appendChild(lbl);
+
+        cell.addEventListener('click', (e) => {
+          if (selectedSet.has(glyph.index)) {
+            selectedSet.delete(glyph.index);
+          } else {
+            selectedSet.add(glyph.index);
+          }
+          document.getElementById(`info-${target}-sel`).textContent = `SEL: ${selectedSet.size}`;
+          cell.classList.toggle('selected', selectedSet.has(glyph.index));
+          inspectGlyph(glyph, target);
+        });
+
+        grid.appendChild(cell);
+      });
+
+      container.appendChild(grid);
+    }
+
+    // High precision inspector
+    function inspectGlyph(glyph, source) {
+      AppState.currentInspectGlyph = glyph;
+      AppState.currentInspectSource = source;
+      const font = source === 'A' ? AppState.fontA : AppState.fontB;
+      if (!glyph || !font) return;
+
+      const char = getGlyphChar(glyph);
+      const hex = glyph.unicode ? '0x' + glyph.unicode.toString(16).toUpperCase().padStart(4, '0') : 'NONE';
+      document.getElementById('lbl-inspect-char').textContent = `SRC: [${source}] | '${char}' (${hex})`;
+
+      const canvas = document.getElementById('canvas-inspector');
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      const w = canvas.width = rect.width * 2;
+      const h = canvas.height = rect.height * 2;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const upm = font.unitsPerEm || 1000;
+      const scale = (h * 0.6) / upm;
+      const offsetX = w * 0.25;
+      const baselineY = h * 0.72;
+
+      // Draw Guidelines
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#E5E7EB';
+
+      // Ascender line
+      const ascY = baselineY - (font.ascender || upm * 0.8) * scale;
+      ctx.beginPath();
+      ctx.moveTo(0, ascY);
+      ctx.lineTo(w, ascY);
+      ctx.stroke();
+
+      // Descender line
+      const descY = baselineY - (font.descender || -upm * 0.2) * scale;
+      ctx.beginPath();
+      ctx.moveTo(0, descY);
+      ctx.lineTo(w, descY);
+      ctx.stroke();
+
+      // Baseline (Red)
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
+      ctx.beginPath();
+      ctx.moveTo(0, baselineY);
+      ctx.lineTo(w, baselineY);
+      ctx.stroke();
+
+      // Advance width vertical marker
+      const advX = offsetX + (glyph.advanceWidth || upm * 0.5) * scale;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(advX, 0);
+      ctx.lineTo(advX, h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw Glyph Vector
+      ctx.fillStyle = '#0A0A0A';
+      try {
+        const path = glyph.getPath(offsetX, baselineY, upm * scale);
+        path.fill = '#0A0A0A';
+        path.draw(ctx);
+      } catch (err) {}
+
+      // Update HUD
+      document.getElementById('metric-adv').textContent = `${glyph.advanceWidth || '--'} pt`;
+      const bb = glyph.getBoundingBox ? glyph.getBoundingBox() : { x1: 0, y1: 0, x2: 0, y2: 0 };
+      document.getElementById('metric-bounds').textContent = `[${Math.round(bb.x1)}, ${Math.round(bb.y1)}] / [${Math.round(bb.x2)}, ${Math.round(bb.y2)}]`;
+    }
+
+    // Refresh Text Preview Box
+    function updateTextPreview() {
+      const text = document.getElementById('input-preview-text').value;
+      const font = AppState.previewTargetFont === 'A' ? AppState.fontA : AppState.fontB;
+      const canvas = document.getElementById('canvas-text-preview');
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      const w = canvas.width = rect.width * 2;
+      const h = canvas.height = rect.height * 2;
+      ctx.clearRect(0, 0, w, h);
+
+      if (!font || !text) return;
+
+      const fontSize = 42;
+      try {
+        const path = font.getPath(text, 10, h * 0.72, fontSize);
+        path.fill = '#0A0A0A';
+        path.draw(ctx);
+      } catch (e) {}
+    }
+
+    document.getElementById('input-preview-text').addEventListener('input', updateTextPreview);
+
+    document.getElementById('toggle-preview-font-a').addEventListener('click', function() {
+      AppState.previewTargetFont = 'A';
+      this.classList.add('active');
+      document.getElementById('toggle-preview-font-b').classList.remove('active');
+      updateTextPreview();
+    });
+
+    document.getElementById('toggle-preview-font-b').addEventListener('click', function() {
+      AppState.previewTargetFont = 'B';
+      this.classList.add('active');
+      document.getElementById('toggle-preview-font-a').classList.remove('active');
+      updateTextPreview();
+    });
+
+    // Populate Font Data into UI
+    function loadFontData(font, target, fileName) {
+      if (target === 'A') {
+        AppState.fontA = font;
+        AppState.glyphsA = Object.values(font.glyphs.glyphs);
+        AppState.selectedA.clear();
+        document.getElementById('info-a-name').textContent = `NAME: ${fileName}`;
+        document.getElementById('info-a-upm').textContent = `UPM: ${font.unitsPerEm}`;
+        document.getElementById('badge-a-glyphs').textContent = `${AppState.glyphsA.length} 字形`;
+        document.getElementById('btn-export-a').disabled = false;
+        document.getElementById('btn-export-a').classList.remove('opacity-50', 'cursor-not-allowed');
+        renderGlyphGrid('a', font, AppState.glyphsA, AppState.selectedA);
+      } else {
+        AppState.fontB = font;
+        AppState.glyphsB = Object.values(font.glyphs.glyphs);
+        AppState.selectedB.clear();
+        document.getElementById('info-b-name').textContent = `NAME: ${fileName}`;
+        document.getElementById('info-b-upm').textContent = `UPM: ${font.unitsPerEm}`;
+        document.getElementById('badge-b-glyphs').textContent = `${AppState.glyphsB.length} 字形`;
+        document.getElementById('btn-export-b').disabled = false;
+        document.getElementById('btn-export-b').classList.remove('opacity-50', 'cursor-not-allowed');
+        renderGlyphGrid('b', font, AppState.glyphsB, AppState.selectedB);
+      }
+      updateTextPreview();
+      log(`字体 [${target}] 已成功解析并加载。`);
+    }
+
+    // File Input Handlers
+    function handleFileUpload(e, target) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const font = opentype.parse(evt.target.result);
+          loadFontData(font, target, file.name);
+        } catch (err) {
+          alert('解析字体文件失败: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    document.getElementById('input-font-a').addEventListener('change', (e) => handleFileUpload(e, 'A'));
+    document.getElementById('input-font-b').addEventListener('change', (e) => handleFileUpload(e, 'B'));
+
+    // Search filters
+    document.getElementById('search-a').addEventListener('input', (e) => {
+      const query = e.target.value.trim().toUpperCase();
+      const filtered = AppState.glyphsA.filter(g => {
+        const char = getGlyphChar(g).toUpperCase();
+        const hex = g.unicode ? g.unicode.toString(16).toUpperCase() : '';
+        return char.includes(query) || hex.includes(query) || (g.name && g.name.toUpperCase().includes(query));
+      });
+      renderGlyphGrid('a', AppState.fontA, filtered, AppState.selectedA);
+    });
+
+    document.getElementById('search-b').addEventListener('input', (e) => {
+      const query = e.target.value.trim().toUpperCase();
+      const filtered = AppState.glyphsB.filter(g => {
+        const char = getGlyphChar(g).toUpperCase();
+        const hex = g.unicode ? g.unicode.toString(16).toUpperCase() : '';
+        return char.includes(query) || hex.includes(query) || (g.name && g.name.toUpperCase().includes(query));
+      });
+      renderGlyphGrid('b', AppState.fontB, filtered, AppState.selectedB);
+    });
+
+    // Select All / Clear
+    document.getElementById('btn-sel-all-a').addEventListener('click', () => {
+      AppState.glyphsA.forEach(g => AppState.selectedA.add(g.index));
+      document.getElementById('info-a-sel').textContent = `SEL: ${AppState.selectedA.size}`;
+      renderGlyphGrid('a', AppState.fontA, AppState.glyphsA, AppState.selectedA);
+    });
+    document.getElementById('btn-clear-sel-a').addEventListener('click', () => {
+      AppState.selectedA.clear();
+      document.getElementById('info-a-sel').textContent = `SEL: 0`;
+      renderGlyphGrid('a', AppState.fontA, AppState.glyphsA, AppState.selectedA);
+    });
+
+    document.getElementById('btn-sel-all-b').addEventListener('click', () => {
+      AppState.glyphsB.forEach(g => AppState.selectedB.add(g.index));
+      document.getElementById('info-b-sel').textContent = `SEL: ${AppState.selectedB.size}`;
+      renderGlyphGrid('b', AppState.fontB, AppState.glyphsB, AppState.selectedB);
+    });
+    document.getElementById('btn-clear-sel-b').addEventListener('click', () => {
+      AppState.selectedB.clear();
+      document.getElementById('info-b-sel').textContent = `SEL: 0`;
+      renderGlyphGrid('b', AppState.fontB, AppState.glyphsB, AppState.selectedB);
+    });
+
+    // GLYPH TRANSFER CORE LOGIC
+    function transferSelectedGlyphs(srcFont, destFont, selectedIndices, srcIsA) {
+      if (!srcFont || !destFont) {
+        alert('请先同时载入字体 A 与字体 B！');
+        return;
+      }
+      if (selectedIndices.size === 0) {
+        alert('请先在源字体中勾选需要移植的字形！');
+        return;
+      }
+
+      const scale = AppState.scaleNormalize ? (destFont.unitsPerEm / srcFont.unitsPerEm) : 1.0;
+      let transferredCount = 0;
+
+      selectedIndices.forEach((idx) => {
+        const srcGlyph = srcFont.glyphs.get(idx);
+        if (!srcGlyph) return;
+
+        // Clone commands with normalized scale
+        const newPath = new opentype.Path();
+        if (srcGlyph.path && srcGlyph.path.commands) {
+          srcGlyph.path.commands.forEach((cmd) => {
+            if (cmd.type === 'M') newPath.moveTo(cmd.x * scale, cmd.y * scale);
+            else if (cmd.type === 'L') newPath.lineTo(cmd.x * scale, cmd.y * scale);
+            else if (cmd.type === 'C') newPath.bezierCurveTo(cmd.x1 * scale, cmd.y1 * scale, cmd.x2 * scale, cmd.y2 * scale, cmd.x * scale, cmd.y * scale);
+            else if (cmd.type === 'Q') newPath.quadraticCurveTo(cmd.x1 * scale, cmd.y1 * scale, cmd.x * scale, cmd.y * scale);
+            else if (cmd.type === 'Z') newPath.close();
+          });
+        }
+
+        const newGlyph = new opentype.Glyph({
+          name: srcGlyph.name || `uni${srcGlyph.unicode ? srcGlyph.unicode.toString(16).toUpperCase() : '0000'}`,
+          unicode: srcGlyph.unicode,
+          unicodes: srcGlyph.unicodes ? [...srcGlyph.unicodes] : (srcGlyph.unicode ? [srcGlyph.unicode] : []),
+          advanceWidth: Math.round((srcGlyph.advanceWidth || srcFont.unitsPerEm) * scale),
+          path: newPath
+        });
+
+        // Find existing match by unicode
+        let targetIndex = -1;
+        if (newGlyph.unicode) {
+          for (let i = 0; i < destFont.glyphs.length; i++) {
+            const dg = destFont.glyphs.get(i);
+            if (dg.unicode === newGlyph.unicode || (dg.unicodes && dg.unicodes.includes(newGlyph.unicode))) {
+              targetIndex = i;
+              break;
+            }
+          }
+        }
+
+        if (targetIndex !== -1) {
+          destFont.glyphs.glyphs[targetIndex] = newGlyph;
+        } else {
+          destFont.glyphs.push(destFont.glyphs.length, newGlyph);
+        }
+        transferredCount++;
+      });
+
+      // Synchronize states
+      if (srcIsA) {
+        AppState.glyphsB = Object.values(destFont.glyphs.glyphs);
+        document.getElementById('badge-b-glyphs').textContent = `${AppState.glyphsB.length} 字形`;
+        renderGlyphGrid('b', destFont, AppState.glyphsB, AppState.selectedB);
+      } else {
+        AppState.glyphsA = Object.values(destFont.glyphs.glyphs);
+        document.getElementById('badge-a-glyphs').textContent = `${AppState.glyphsA.length} 字形`;
+        renderGlyphGrid('a', destFont, AppState.glyphsA, AppState.selectedA);
+      }
+
+      updateTextPreview();
+      log(`移植成功：共 ${transferredCount} 个字形已并入目标工件 (UPM 缩放因子: ${scale.toFixed(3)})。`);
+    }
+
+    document.getElementById('btn-transfer-a-to-b').addEventListener('click', () => {
+      transferSelectedGlyphs(AppState.fontA, AppState.fontB, AppState.selectedA, true);
+    });
+
+    document.getElementById('btn-transfer-b-to-a').addEventListener('click', () => {
+      transferSelectedGlyphs(AppState.fontB, AppState.fontA, AppState.selectedB, false);
+    });
+
+    // Auto-fill missing glyphs in Font B from Font A
+    document.getElementById('btn-fill-missing').addEventListener('click', () => {
+      if (!AppState.fontA || !AppState.fontB) {
+        alert('请先同时载入字体 A 与字体 B！');
+        return;
+      }
+
+      const existingBUnicodes = new Set();
+      for (let i = 0; i < AppState.fontB.glyphs.length; i++) {
+        const g = AppState.fontB.glyphs.get(i);
+        if (g.unicode) existingBUnicodes.add(g.unicode);
+      }
+
+      const missingIndices = new Set();
+      for (let i = 0; i < AppState.fontA.glyphs.length; i++) {
+        const ga = AppState.fontA.glyphs.get(i);
+        if (ga.unicode && !existingBUnicodes.has(ga.unicode)) {
+          missingIndices.add(ga.index);
+        }
+      }
+
+      if (missingIndices.size === 0) {
+        alert('字体 B 已经包含字体 A 的所有字符，无缺失字形。');
+        return;
+      }
+
+      transferSelectedGlyphs(AppState.fontA, AppState.fontB, missingIndices, true);
+      log(`自动补全完成：从字体 A 向字体 B 补填了 ${missingIndices.size} 个缺失字形。`);
+    });
+
+    // Download/Export Handlers
+    document.getElementById('btn-export-a').addEventListener('click', () => {
+      if (AppState.fontA) AppState.fontA.download('Talos-FontA-Compiled.ttf');
+    });
+    document.getElementById('btn-export-b').addEventListener('click', () => {
+      if (AppState.fontB) AppState.fontB.download('Talos-FontB-Modified.ttf');
+    });
+
+    // BUILT-IN SAMPLE FONTS (Offline generator using opentype.js)
+    document.getElementById('btn-load-sample').addEventListener('click', () => {
+      log('正在动态合成测试字型 A (Sharp Sans) 与 B (Monospace Stencil)...');
+
+      // Helper to build procedural glyphs
+      function buildFont(familyName, upm, isMonospace) {
+        const notdefPath = new opentype.Path();
+        notdefPath.moveTo(100, 0);
+        notdefPath.lineTo(100, 700);
+        notdefPath.lineTo(500, 700);
+        notdefPath.lineTo(500, 0);
+        notdefPath.close();
+
+        const notdef = new opentype.Glyph({
+          name: '.notdef',
+          unicode: 0,
+          advanceWidth: 650,
+          path: notdefPath
+        });
+
+        const glyphList = [notdef];
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ';
+
+        for (let i = 0; i < chars.length; i++) {
+          const ch = chars[i];
+          const code = ch.charCodeAt(0);
+          const p = new opentype.Path();
+          const adv = isMonospace ? 600 : 560;
+
+          if (ch === ' ') {
+            // Space glyph
+          } else if (isMonospace) {
+            // Stencil / Geometric blocky contour
+            p.moveTo(100, 50);
+            p.lineTo(100, 650);
+            p.lineTo(500, 650);
+            p.lineTo(500, 50);
+            p.close();
+            // Counter cutout
+            p.moveTo(220, 200);
+            p.lineTo(380, 200);
+            p.lineTo(380, 500);
+            p.lineTo(220, 500);
+            p.close();
+          } else {
+            // Sharp sans-serif triangle / angular contour
+            p.moveTo(120, 0);
+            p.lineTo(300, 720);
+            p.lineTo(480, 0);
+            p.lineTo(360, 0);
+            p.lineTo(300, 280);
+            p.lineTo(240, 0);
+            p.close();
+          }
+
+          glyphList.push(new opentype.Glyph({
+            name: ch === ' ' ? 'space' : ch,
+            unicode: code,
+            advanceWidth: adv,
+            path: p
+          }));
+        }
+
+        return new opentype.Font({
+          familyName: familyName,
+          styleName: 'Regular',
+          unitsPerEm: upm,
+          ascender: upm * 0.8,
+          descender: -upm * 0.2,
+          glyphs: glyphList
+        });
+      }
+
+      const sampleFontA = buildFont('Talos-Sharp-Sans', 1000, false);
+      const sampleFontB = buildFont('Talos-Block-Mono', 2048, true);
+
+      // Remove characters from B to demonstrate missing glyph transfer
+      sampleFontB.glyphs.glyphs = sampleFontB.glyphs.glyphs.filter(g => {
+        const c = String.fromCharCode(g.unicode || 0);
+        return !'DEF6789'.includes(c);
+      });
+      sampleFontB.glyphs.length = sampleFontB.glyphs.glyphs.length;
+
+      loadFontData(sampleFontA, 'A', 'Talos-Sharp-Sans.ttf');
+      loadFontData(sampleFontB, 'B', 'Talos-Block-Mono (缺少DEF/6789).ttf');
+      log('测试字体已就绪：字体 A (1000 UPM) / 字体 B (2048 UPM, 故意剔除了 D,E,F,6,7,8,9)。');
+    });
+  </script>
+</body>
+</html>

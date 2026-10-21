@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TALOS AIC // 战术装甲自由瞄准协议 [AIM-DECOUPLED]</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            mono: {
+              50: '#F9FAFB', 100: '#F3F4F6', 200: '#E5E7EB',
+              300: '#D1D5DB', 400: '#9CA3AF', 500: '#6B7280',
+              600: '#4B5563', 700: '#374151', 800: '#1F2937',
+              900: '#111827', 950: '#0A0A0A',
+            }
+          },
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; user-select: none; }
+    body {
+      background-color: #F8F9FA;
+      color: #111827;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', 'Inter', monospace;
+    }
+    .mono-card {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+    .mono-btn {
+      background: #FFFFFF;
+      border: 1px solid #D1D5DB;
+      color: #111827;
+      transition: all 0.12s ease-in-out;
+    }
+    .mono-btn:hover { background: #F3F4F6; border-color: #0A0A0A; }
+    .mono-btn:active { background: #0A0A0A; color: #FFFFFF; }
+    .mono-btn-primary { background: #0A0A0A; color: #FFFFFF; border-color: #0A0A0A; }
+    .mono-btn-primary:hover { background: #262626; }
+    .architectural-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+    }
+    input[type=range] { accent-color: #0A0A0A; }
+  </style>
+</head>
+
+<body class="w-screen h-screen flex flex-col relative select-none bg-[#F8F9FA]">
+
+  <div class="absolute inset-0 architectural-grid pointer-events-none z-0"></div>
+
+  <!-- Header -->
+  <header class="relative z-20 w-full px-6 py-3 flex items-center justify-between border-b border-black/[0.06] bg-white/90 backdrop-blur-md">
+    <div class="flex items-center space-x-4">
+      <div class="w-2.5 h-6 bg-black"></div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-sans font-bold text-base tracking-wider text-black">TALOS TACTICAL DEFENSE</span>
+          <span class="text-[10px] px-1.5 py-0.5 bg-black/5 text-mono-700 border border-black/10 rounded font-mono font-medium">AIM-DECOUPLED</span>
+        </div>
+        <div class="text-[10px] text-mono-400 tracking-wider flex items-center space-x-2.5 mt-0.5">
+          <span>SEED: <strong id="lbl-seed" class="text-black font-mono font-semibold">0x7FA2</strong></span>
+          <span class="text-mono-300">/</span>
+          <span class="text-mono-600 font-medium">360°鼠标任意仰角瞄准 + 3×3声波</span>
+          <span class="text-mono-300">/</span>
+          <span id="system-time" class="text-mono-500">00:00:00 SOL</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顶部操作栏 -->
+    <div class="flex items-center space-x-3 text-xs">
+      <button id="btn-toggle-cheat" class="mono-btn px-3 py-1.5 text-xs font-bold rounded-md flex items-center space-x-1.5">
+        <span class="w-2 h-2 rounded-full bg-mono-400" id="cheat-indicator"></span>
+        <span id="cheat-text">超频开挂模式</span>
+      </button>
+
+      <button id="btn-open-settings" class="mono-btn px-3 py-1.5 text-xs font-bold rounded-md flex items-center space-x-1.5 shadow-sm">
+        <span>⚙ 战术沙盒 / 配置</span>
+      </button>
+
+      <button id="btn-restart" class="mono-btn px-3 py-1.5 text-xs font-bold rounded-md flex items-center space-x-1.5 shadow-sm">
+        <span>重置战局</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Viewport Canvas -->
+  <main class="relative flex-1 flex items-center justify-center p-4 z-10 overflow-hidden cursor-crosshair">
+    <div class="relative mono-card p-2 rounded-xl border border-black/10 shadow-2xl bg-white">
+      <canvas id="viewport-canvas" width="680" height="680" class="block bg-[#FAFAFA] rounded border border-black/5"></canvas>
+    </div>
+  </main>
+
+  <!-- Left Panel -->
+  <aside class="absolute left-6 top-20 z-20 w-72 mono-card p-4 space-y-3 rounded-xl border border-black/10 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-black/5 pb-2">
+      <div class="flex items-center space-x-2">
+        <div class="w-1.5 h-1.5 bg-black rounded-full"></div>
+        <h2 class="text-xs font-bold tracking-wider text-black font-sans uppercase">机动装甲遥测</h2>
+      </div>
+      <span class="text-[9px] text-mono-400 font-mono">AIC v5.0</span>
+    </div>
+
+    <div class="space-y-1">
+      <div class="flex justify-between text-xs">
+        <span class="text-mono-500">机体装甲 (AP)</span>
+        <span id="ui-hp" class="text-black font-bold font-mono">5 / 5</span>
+      </div>
+      <div class="w-full bg-mono-200 h-1.5 rounded-full overflow-hidden">
+        <div id="ui-hp-bar" class="bg-black h-full transition-all duration-200" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <div class="space-y-1">
+      <div class="flex justify-between text-xs">
+        <span class="text-mono-500">基站护盾 (SHIELD)</span>
+        <span id="ui-base-hp" class="text-emerald-600 font-bold font-mono">4 / 4</span>
+      </div>
+      <div class="w-full bg-mono-200 h-1.5 rounded-full overflow-hidden">
+        <div id="ui-base-bar" class="bg-emerald-600 h-full transition-all duration-200" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <div class="space-y-1 pt-1.5 border-t border-black/5 text-xs font-mono">
+      <div class="flex justify-between">
+        <span class="text-mono-500">已击落敌机</span>
+        <span id="ui-score" class="font-bold text-black">0000</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-mono-500">近防拦截数</span>
+        <span id="ui-intercepted" class="font-bold text-indigo-600">0</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-mono-500">炮管仰角</span>
+        <span id="ui-turret-deg" class="font-bold text-black font-mono">000°</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-mono-500">底盘朝向</span>
+        <span id="ui-facing" class="font-bold text-black font-mono">正北 (000°)</span>
+      </div>
+    </div>
+
+    <!-- 技能快捷栏 -->
+    <div class="pt-2 border-t border-black/5 space-y-1.5">
+      <div class="text-[10px] font-bold text-black uppercase tracking-wider">超频特殊武装</div>
+      <div class="grid grid-cols-1 gap-1.5 text-[11px]">
+        <button id="btn-fire-railgun" class="mono-btn py-1 px-2 rounded flex justify-between items-center" title="沿鼠标所指角度发射全图贯穿射线">
+          <span>⚡ 任意角贯穿射线</span>
+          <span class="font-mono text-[10px] text-mono-400 border border-black/10 px-1 rounded bg-mono-50">[K]</span>
+        </button>
+        <button id="btn-throw-bomb" class="mono-btn py-1 px-2 rounded flex justify-between items-center" title="向鼠标光标落点进行远距抛投">
+          <span>💣 远距鼠标抛投炸弹</span>
+          <span class="font-mono text-[10px] text-mono-400 border border-black/10 px-1 rounded bg-mono-50">[E]</span>
+        </button>
+        <button id="btn-fire-emp" class="mono-btn py-1 px-2 rounded flex justify-between items-center" title="释放3x3近身战术震荡波">
+          <span>◎ 3×3 定向震荡波</span>
+          <span class="font-mono text-[10px] text-mono-400 border border-black/10 px-1 rounded bg-mono-50">[Q]</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="pt-2 border-t border-black/5 text-[10px] text-mono-500 leading-relaxed font-sans">
+      <div class="font-bold text-black mb-0.5">控制指南：</div>
+      <div>• <strong class="text-black font-mono">鼠标移动</strong>：360°旋转炮塔身管</div>
+      <div>• <strong class="text-black font-mono">左键 / 空格</strong>：朝鼠标方向发射穿甲弹</div>
+      <div>• <strong class="text-black font-mono">W / A / S / D</strong>：底盘两段式推进</div>
+    </div>
+  </aside>
+
+  <!-- Right: Radar & Gyro -->
+  <div class="absolute right-6 top-20 z-20 mono-card p-3 rounded-xl flex flex-col items-center space-y-3 w-40 border border-black/10">
+    <div class="flex items-center justify-between w-full text-[9px] text-mono-400 border-b border-black/5 pb-1">
+      <span class="font-mono text-mono-700 font-semibold">TACTICAL RADAR</span>
+      <span id="compass-hdg" class="text-black font-mono font-bold">000°</span>
+    </div>
+
+    <div class="relative w-32 h-32 rounded border border-black/10 bg-[#FAFAFA] overflow-hidden shadow-inner flex items-center justify-center">
+      <canvas id="radar-canvas" width="128" height="128" class="w-full h-full block"></canvas>
+    </div>
+
+    <div class="relative w-12 h-12 rounded-full border border-black/10 bg-white flex items-center justify-center shadow-sm">
+      <div id="compass-needle" class="absolute inset-0 flex items-center justify-center transition-transform duration-75 ease-out">
+        <div class="w-0.5 h-5 bg-black absolute -top-1"></div>
+        <div class="w-1.5 h-1.5 bg-black rounded-full"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⚙ 沙盒自定义配置弹窗 -->
+  <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm hidden">
+    <div class="mono-card w-[480px] max-w-[92vw] p-6 rounded-2xl shadow-2xl border border-black/15 space-y-4">
+      <div class="flex items-center justify-between border-b border-black/10 pb-3">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">⚙</span>
+          <h3 class="font-sans font-bold text-sm tracking-wide text-black uppercase">战术沙盒与核心参数配置</h3>
+        </div>
+        <button id="btn-close-settings" class="text-mono-400 hover:text-black font-mono text-base">✕</button>
+      </div>
+
+      <div class="space-y-3.5 text-xs text-mono-700 max-h-[60vh] overflow-y-auto pr-1">
+        <div class="space-y-1">
+          <div class="flex justify-between">
+            <span class="font-medium">玩家装甲耐久 (AP)</span>
+            <span id="val-player-hp" class="font-mono font-bold text-black">5 HP</span>
+          </div>
+          <input id="slider-player-hp" type="range" min="1" max="20" value="5" class="w-full">
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between">
+            <span class="font-medium">基站护盾耐久 (SHIELD)</span>
+            <span id="val-base-hp" class="font-mono font-bold text-emerald-600">4 点</span>
+          </div>
+          <input id="slider-base-hp" type="range" min="1" max="15" value="4" class="w-full">
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between">
+            <span class="font-medium">敌军集群规模</span>
+            <span id="val-max-enemies" class="font-mono font-bold text-black">6 架</span>
+          </div>
+          <input id="slider-max-enemies" type="range" min="2" max="15" value="6" class="w-full">
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between">
+            <span class="font-medium">随机掩体生成密度</span>
+            <span id="val-obstacle-density" class="font-mono font-bold text-black">18%</span>
+          </div>
+          <input id="slider-obstacle-density" type="range" min="8" max="32" value="18" class="w-full">
+        </div>
+
+        <div class="pt-2 border-t border-black/5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span>近防炮空中拦截 (打爆敌军炮弹)</span>
+            <button id="toggle-intercept" class="mono-btn px-2.5 py-1 text-[11px] rounded font-bold bg-black text-white">已开启</button>
+          </div>
+          <div class="flex items-center justify-between">
+            <span>敌机智能视线开火与战术突袭</span>
+            <button id="toggle-enemy-ai" class="mono-btn px-2.5 py-1 text-[11px] rounded font-bold bg-black text-white">高敏锐 AI</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-black/10 flex space-x-2">
+        <button id="btn-regen-map" class="mono-btn flex-1 py-2 font-bold text-xs rounded-lg">
+          🎲 重构随机地貌
+        </button>
+        <button id="btn-apply-settings" class="mono-btn-primary flex-1 py-2 font-bold text-xs rounded-lg">
+          应用并重置战局
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 极简 Web Audio 战术音频引擎 ---
+    class TacticalAudioEngine {
+      constructor() { this.ctx = null; }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      playPulseFire() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(820, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.08);
+      }
+      playIntercept() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1100, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.12);
+      }
+      playImpact() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.09);
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.09);
+      }
+      playExplode() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(95, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(22, this.ctx.currentTime + 0.32);
+        gain.gain.setValueAtTime(0.14, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.32);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.32);
+      }
+      playShieldHit() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(480, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + 0.18);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.18);
+      }
+      playSonicWave() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.16, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.25);
+      }
+    }
+    const sound = new TacticalAudioEngine();
+
+    // --- 沙盒参数系统 ---
+    const Sandbox = {
+      playerMaxHp: 5,
+      baseMaxShield: 4,
+      maxEnemies: 6,
+      obstacleDensity: 0.18,
+      canInterceptBullets: true,
+      smartEnemyAI: true,
+      seedHex: '0x7FA2'
+    };
+
+    // --- 广域地图体系 (35 x 35) ---
+    const TILE = 40;
+    const ROWS = 35;
+    const COLS = 35;
+    const WORLD_WIDTH = COLS * TILE;
+    const WORLD_HEIGHT = ROWS * TILE;
+
+    const DIR = { UP: 0, RIGHT: 1, DOWN: 2, LEFT: 3 };
+    const DX = [0, 1, 0, -1];
+    const DY = [-1, 0, 1, 0];
+    const TARGET_ANGLES = [0, 90, 180, 270];
+    const FACING_TEXT = ['正北 (000°)', '正东 (090°)', '正南 (180°)', '正西 (270°)'];
+
+    let grid = [];
+    const BASE_POS = { gx: 17, gy: 32 };
+
+    function buildProceduralMap(density = 0.18) {
+      const g = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) {
+            g[r][c] = 2;
+          }
+        }
+      }
+      for (let r = 2; r < ROWS - 3; r++) {
+        for (let c = 2; c < COLS - 2; c++) {
+          if (c === 17 || r === 17) continue;
+          if (Math.hypot(c - BASE_POS.gx, r - BASE_POS.gy) < 4) continue;
+          if (Math.hypot(c - 17, r - 3) < 3) continue;
+
+          const rnd = Math.random();
+          if (rnd < density) {
+            g[r][c] = Math.random() < 0.75 ? 1 : 2;
+            if (Math.random() < 0.4 && c + 1 < COLS - 2) g[r][c + 1] = 1;
+            if (Math.random() < 0.3 && r + 1 < ROWS - 3) g[r + 1][c] = 1;
+          }
+        }
+      }
+      g[BASE_POS.gy][BASE_POS.gx] = 3;
+      g[BASE_POS.gy - 1][BASE_POS.gx - 1] = 1;
+      g[BASE_POS.gy - 1][BASE_POS.gx] = 2;
+      g[BASE_POS.gy - 1][BASE_POS.gx + 1] = 1;
+      g[BASE_POS.gy][BASE_POS.gx - 1] = 1;
+      g[BASE_POS.gy][BASE_POS.gx + 1] = 1;
+
+      Sandbox.seedHex = '0x' + Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+      document.getElementById('lbl-seed').innerText = Sandbox.seedHex;
+      return g;
+    }
+
+    grid = buildProceduralMap(Sandbox.obstacleDensity);
+
+    // --- 界面元素绑定 ---
+    const canvas = document.getElementById('viewport-canvas');
+    const ctx = canvas.getContext('2d');
+    const radarCanvas = document.getElementById('radar-canvas');
+    const radarCtx = radarCanvas.getContext('2d');
+
+    const uiHp = document.getElementById('ui-hp');
+    const uiHpBar = document.getElementById('ui-hp-bar');
+    const uiBaseHp = document.getElementById('ui-base-hp');
+    const uiBaseBar = document.getElementById('ui-base-bar');
+    const uiScore = document.getElementById('ui-score');
+    const uiIntercepted = document.getElementById('ui-intercepted');
+    const uiTurretDeg = document.getElementById('ui-turret-deg');
+    const uiFacing = document.getElementById('ui-facing');
+    const compassNeedle = document.getElementById('compass-needle');
+    const compassHdg = document.getElementById('compass-hdg');
+
+    let isCheatMode = false;
+    let score = 0;
+    let interceptedCount = 0;
+    let playerHp = Sandbox.playerMaxHp;
+    let baseShield = Sandbox.baseMaxShield;
+    let gameState = 'PLAYING';
+    let bullets = [];
+    let enemies = [];
+    let particles = [];
+    let bombs = [];
+    let railgunBeams = [];
+    let sonicWaves = [];
+    let screenShake = 0;
+
+    const camera = { x: 0, y: 0, targetX: 0, targetY: 0 };
+    const mouseWorld = { x: 0, y: 0 };
+
+    // --- 玩家装甲实体：底盘角度与炮塔角度独立解耦 ---
+    const player = {
+      gx: 17,
+      gy: 30,
+      targetGx: 17,
+      targetGy: 30,
+      x: 17 * TILE,
+      y: 30 * TILE,
+      isMoving: false,
+      speed: 3.6,
+      dir: DIR.UP,
+      chassisAngle: 0,
+      targetChassisAngle: 0,
+      turretAngle: -Math.PI / 2, // 弧度制
+      cooldown: 0,
+      invulnerable: 60
+    };
+
+    function lerpAngle(current, target, factor) {
+      let diff = (target - current) % 360;
+      if (diff < -180) diff += 360;
+      if (diff > 180) diff -= 360;
+      return current + diff * factor;
+    }
+
+    function isCellFree(gx, gy, excludeTank = null) {
+      if (gx < 0 || gx >= COLS || gy < 0 || gy >= ROWS) return false;
+      if (grid[gy][gx] !== 0) return false;
+
+      if (excludeTank !== player) {
+        if ((player.gx === gx && player.gy === gy) || (player.targetGx === gx && player.targetGy === gy)) {
+          return false;
+        }
+      }
+      for (let e of enemies) {
+        if (e !== excludeTank) {
+          if ((e.gx === gx && e.gy === gy) || (e.targetGx === gx && e.targetGy === gy)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    // --- 鼠标任意角度瞄准监听 ---
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseScreenX = e.clientX - rect.left;
+      const mouseScreenY = e.clientY - rect.top;
+      mouseWorld.x = mouseScreenX + camera.x;
+      mouseWorld.y = mouseScreenY + camera.y;
+
+      const pCenterX = player.x + TILE / 2;
+      const pCenterY = player.y + TILE / 2;
+      player.turretAngle = Math.atan2(mouseWorld.y - pCenterY, mouseWorld.x - pCenterX);
+
+      const deg = Math.round(((player.turretAngle * 180 / Math.PI) + 450) % 360);
+      uiTurretDeg.innerText = `${String(deg).padStart(3, '0')}°`;
+      compassNeedle.style.transform = `rotate(${deg}deg)`;
+      compassHdg.innerText = `${String(deg).padStart(3, '0')}°`;
+    });
+
+    // --- 两段式输入控制机理 ---
+    const activeKeys = {};
+    let keyHoldDuration = 0;
+
+    window.addEventListener('keydown', (e) => {
+      sound.init();
+      const k = e.key.toLowerCase();
+      if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
+        e.preventDefault();
+      }
+
+      let desired = null;
+      if (k === 'w' || k === 'arrowup') desired = DIR.UP;
+      else if (k === 'd' || k === 'arrowright') desired = DIR.RIGHT;
+      else if (k === 's' || k === 'arrowdown') desired = DIR.DOWN;
+      else if (k === 'a' || k === 'arrowleft') desired = DIR.LEFT;
+
+      if (desired !== null && gameState === 'PLAYING') {
+        if (!activeKeys[k]) {
+          if (player.dir !== desired) {
+            player.dir = desired;
+            player.targetChassisAngle = TARGET_ANGLES[desired];
+            uiFacing.innerText = FACING_TEXT[desired];
+          } else {
+            tryAdvancePlayer();
+          }
+        }
+      }
+
+      activeKeys[k] = true;
+
+      if (gameState !== 'PLAYING' && (k === 'r' || k === ' ')) resetGame();
+      if (k === 'k') triggerRailgun();
+      if (k === 'e') triggerBomb();
+      if (k === 'q') triggerSonicWave();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      activeKeys[e.key.toLowerCase()] = false;
+    });
+
+    function tryAdvancePlayer() {
+      if (player.isMoving) return;
+      const nxtGx = player.gx + DX[player.dir];
+      const nxtGy = player.gy + DY[player.dir];
+      if (isCellFree(nxtGx, nxtGy, player)) {
+        player.targetGx = nxtGx;
+        player.targetGy = nxtGy;
+        player.isMoving = true;
+      }
+    }
+
+    // 鼠标点击即沿炮管角度射击
+    canvas.addEventListener('mousedown', () => {
+      sound.init();
+      if (gameState === 'PLAYING') firePlayerBullet();
+      else resetGame();
+    });
+
+    function firePlayerBullet() {
+      if (!isCheatMode && player.cooldown > 0) return;
+      const pCenterX = player.x + TILE / 2;
+      const pCenterY = player.y + TILE / 2;
+      const speed = isCheatMode ? 10.5 : 7.6;
+      const barrelLen = 22;
+
+      bullets.push({
+        x: pCenterX + Math.cos(player.turretAngle) * barrelLen,
+        y: pCenterY + Math.sin(player.turretAngle) * barrelLen,
+        vx: Math.cos(player.turretAngle) * speed,
+        vy: Math.sin(player.turretAngle) * speed,
+        isPlayer: true
+      });
+      player.cooldown = isCheatMode ? 0 : 14;
+      sound.playPulseFire();
+    }
+
+    // --- 任意倾角高能贯穿射线 (Railgun) ---
+    function triggerRailgun() {
+      sound.playExplode();
+      screenShake = 6;
+      const pCenterX = player.x + TILE / 2;
+      const pCenterY = player.y + TILE / 2;
+      const maxRayDist = 1600;
+      const endX = pCenterX + Math.cos(player.turretAngle) * maxRayDist;
+      const endY = pCenterY + Math.sin(player.turretAngle) * maxRayDist;
+
+      railgunBeams.push({
+        x1: pCenterX, y1: pCenterY, x2: endX, y2: endY,
+        life: 18, maxLife: 18
+      });
+
+      // 沿鼠标任意射线进行步进光线投射判定
+      const steps = 120;
+      const dx = (endX - pCenterX) / steps;
+      const dy = (endY - pCenterY) / steps;
+      const hitTiles = new Set();
+
+      for (let s = 1; s <= steps; s++) {
+        const curX = pCenterX + dx * s;
+        const curY = pCenterY + dy * s;
+        const c = Math.floor(curX / TILE);
+        const r = Math.floor(curY / TILE);
+
+        if (r > 0 && r < ROWS - 1 && c > 0 && c < COLS - 1) {
+          const key = `${r}_${c}`;
+          if (!hitTiles.has(key) && grid[r][c] === 1) {
+            grid[r][c] = 0;
+            addShockwave(c * TILE + 20, r * TILE + 20, '#6B7280', 8);
+            hitTiles.add(key);
+          }
+        }
+
+        // 检测光束命中的敌机
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          if (Math.hypot(e.x + 20 - curX, e.y + 20 - curY) < 22) {
+            addShockwave(e.x + 20, e.y + 20, '#000000', 16);
+            enemies.splice(i, 1);
+            score += 200;
+            uiScore.innerText = String(score).padStart(4, '0');
+          }
+        }
+      }
+    }
+
+    // --- 远距鼠标抛投炸弹 (可投掷远距离) ---
+    function triggerBomb() {
+      const pCenterX = player.x + TILE / 2;
+      const pCenterY = player.y + TILE / 2;
+
+      // 计算鼠标与坦克的矢量与射程（最大 8 格远）
+      const dist = Math.min(Math.hypot(mouseWorld.x - pCenterX, mouseWorld.y - pCenterY), 8 * TILE);
+      const angle = Math.atan2(mouseWorld.y - pCenterY, mouseWorld.x - pCenterX);
+
+      const targetX = pCenterX + Math.cos(angle) * dist;
+      const targetY = pCenterY + Math.sin(angle) * dist;
+      const targetGx = Math.max(1, Math.min(COLS - 2, Math.floor(targetX / TILE)));
+      const targetGy = Math.max(1, Math.min(ROWS - 2, Math.floor(targetY / TILE)));
+
+      bombs.push({
+        gx: targetGx,
+        gy: targetGy,
+        x: targetGx * TILE + TILE / 2,
+        y: targetGy * TILE + TILE / 2,
+        timer: 32
+      });
+      sound.playPulseFire();
+    }
+
+    // --- 平衡后的 3×3 近身定向战术声波 ---
+    function triggerSonicWave() {
+      sound.playSonicWave();
+      screenShake = 5;
+      const pCenterX = player.x + TILE / 2;
+      const pCenterY = player.y + TILE / 2;
+      const blastRadius = 1.5 * TILE; // 恰好覆盖自身周围 3x3 网格
+
+      sonicWaves.push({
+        x: pCenterX, y: pCenterY,
+        currentRadius: 10,
+        maxRadius: blastRadius,
+        life: 14, maxLife: 14
+      });
+
+      // 摧毁自身周围 3x3 范围内的复合掩体
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const bx = player.gx + dx;
+          const by = player.gy + dy;
+          if (bx > 0 && bx < COLS - 1 && by > 0 && by < ROWS - 1) {
+            if (grid[by][bx] === 1) {
+              grid[by][bx] = 0;
+              addShockwave(bx * TILE + 20, by * TILE + 20, '#6B7280', 6);
+            }
+          }
+        }
+      }
+
+      // 击毁贴近 3x3 范围内的敌军
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        if (Math.hypot(e.x + 20 - pCenterX, e.y + 20 - pCenterY) <= blastRadius + 10) {
+          addShockwave(e.x + 20, e.y + 20, '#000000', 14);
+          enemies.splice(i, 1);
+          score += 150;
+        }
+      }
+      uiScore.innerText = String(score).padStart(4, '0');
+    }
+
+    document.getElementById('btn-fire-railgun').addEventListener('click', triggerRailgun);
+    document.getElementById('btn-throw-bomb').addEventListener('click', triggerBomb);
+    document.getElementById('btn-fire-emp').addEventListener('click', triggerSonicWave);
+
+    // --- 敌机 AI 生成 ---
+    function spawnEnemy() {
+      if (enemies.length >= Sandbox.maxEnemies) return;
+      const spawns = [
+        { gx: 2, gy: 2 }, { gx: 17, gy: 2 }, { gx: 32, gy: 2 },
+        { gx: 2, gy: 16 }, { gx: 32, gy: 16 }
+      ];
+      const s = spawns[Math.floor(Math.random() * spawns.length)];
+      if (!isCellFree(s.gx, s.gy)) return;
+
+      const isHeavySiege = Math.random() < 0.35;
+      enemies.push({
+        gx: s.gx,
+        gy: s.gy,
+        targetGx: s.gx,
+        targetGy: s.gy,
+        x: s.gx * TILE,
+        y: s.gy * TILE,
+        isMoving: false,
+        speed: isHeavySiege ? 1.6 : 2.4,
+        dir: DIR.DOWN,
+        renderAngle: 180,
+        targetAngle: 180,
+        hp: isHeavySiege ? 3 : 1,
+        isSiege: isHeavySiege,
+        decisionTimer: 10,
+        shootTimer: Math.floor(Math.random() * 50) + 30
+      });
+    }
+
+    function addShockwave(x, y, color = '#0A0A0A', count = 12) {
+      for (let i = 0; i < count; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const vel = Math.random() * 4 + 1.2;
+        particles.push({
+          x: x, y: y,
+          vx: Math.cos(ang) * vel, vy: Math.sin(ang) * vel,
+          life: 20, maxLife: 20, color: color
+        });
+      }
+    }
+
+    // --- 沙盒设置交互 ---
+    const modalSettings = document.getElementById('settings-modal');
+    document.getElementById('btn-open-settings').addEventListener('click', () => modalSettings.classList.remove('hidden'));
+    document.getElementById('btn-close-settings').addEventListener('click', () => modalSettings.classList.add('hidden'));
+
+    const sPlayerHp = document.getElementById('slider-player-hp');
+    sPlayerHp.addEventListener('input', (e) => {
+      Sandbox.playerMaxHp = parseInt(e.target.value);
+      document.getElementById('val-player-hp').innerText = `${Sandbox.playerMaxHp} HP`;
+    });
+
+    const sBaseHp = document.getElementById('slider-base-hp');
+    sBaseHp.addEventListener('input', (e) => {
+      Sandbox.baseMaxShield = parseInt(e.target.value);
+      document.getElementById('val-base-hp').innerText = `${Sandbox.baseMaxShield} 点`;
+    });
+
+    const sMaxEnemies = document.getElementById('slider-max-enemies');
+    sMaxEnemies.addEventListener('input', (e) => {
+      Sandbox.maxEnemies = parseInt(e.target.value);
+      document.getElementById('val-max-enemies').innerText = `${Sandbox.maxEnemies} 架`;
+    });
+
+    const sObstacleDensity = document.getElementById('slider-obstacle-density');
+    sObstacleDensity.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value);
+      Sandbox.obstacleDensity = val / 100;
+      document.getElementById('val-obstacle-density').innerText = `${val}%`;
+    });
+
+    const toggleIntercept = document.getElementById('toggle-intercept');
+    toggleIntercept.addEventListener('click', () => {
+      Sandbox.canInterceptBullets = !Sandbox.canInterceptBullets;
+      toggleIntercept.innerText = Sandbox.canInterceptBullets ? '已开启' : '已关闭';
+      toggleIntercept.className = Sandbox.canInterceptBullets ? 'mono-btn px-2.5 py-1 text-[11px] rounded font-bold bg-black text-white' : 'mono-btn px-2.5 py-1 text-[11px] rounded font-bold';
+    });
+
+    const toggleEnemyAI = document.getElementById('toggle-enemy-ai');
+    toggleEnemyAI.addEventListener('click', () => {
+      Sandbox.smartEnemyAI = !Sandbox.smartEnemyAI;
+      toggleEnemyAI.innerText = Sandbox.smartEnemyAI ? '高敏锐 AI' : '基础巡逻';
+    });
+
+    document.getElementById('btn-regen-map').addEventListener('click', () => {
+      grid = buildProceduralMap(Sandbox.obstacleDensity);
+      sound.playExplode();
+    });
+
+    document.getElementById('btn-apply-settings').addEventListener('click', () => {
+      modalSettings.classList.add('hidden');
+      resetGame();
+    });
+
+    const btnToggleCheat = document.getElementById('btn-toggle-cheat');
+    const cheatIndicator = document.getElementById('cheat-indicator');
+    const cheatText = document.getElementById('cheat-text');
+
+    btnToggleCheat.addEventListener('click', () => {
+      isCheatMode = !isCheatMode;
+      if (isCheatMode) {
+        cheatIndicator.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+        cheatText.innerText = '超频开挂已激活';
+        uiHp.innerText = '∞ / ∞';
+        uiHpBar.style.width = '100%';
+        player.speed = 5.2;
+      } else {
+        cheatIndicator.className = 'w-2 h-2 rounded-full bg-mono-400';
+        cheatText.innerText = '超频开挂模式';
+        uiHp.innerText = `${playerHp} / ${Sandbox.playerMaxHp}`;
+        uiHpBar.style.width = `${(playerHp / Sandbox.playerMaxHp) * 100}%`;
+        player.speed = 3.6;
+      }
+    });
+
+    function resetGame() {
+      playerHp = Sandbox.playerMaxHp;
+      baseShield = Sandbox.baseMaxShield;
+      bullets = [];
+      enemies = [];
+      particles = [];
+      bombs = [];
+      railgunBeams = [];
+      sonicWaves = [];
+      score = 0;
+      interceptedCount = 0;
+      gameState = 'PLAYING';
+
+      player.gx = 17; player.gy = 30;
+      player.targetGx = 17; player.targetGy = 30;
+      player.x = 17 * TILE; player.y = 30 * TILE;
+      player.isMoving = false;
+      player.dir = DIR.UP;
+      player.chassisAngle = 0;
+      player.targetChassisAngle = 0;
+      player.invulnerable = 60;
+
+      uiScore.innerText = '0000';
+      uiIntercepted.innerText = '0';
+      uiHp.innerText = isCheatMode ? '∞ / ∞' : `${playerHp} / ${Sandbox.playerMaxHp}`;
+      uiHpBar.style.width = '100%';
+      uiBaseHp.innerText = `${baseShield} / ${Sandbox.baseMaxShield}`;
+      uiBaseBar.style.width = '100%';
+      uiFacing.innerText = FACING_TEXT[DIR.UP];
+
+      sound.playImpact();
+    }
+    document.getElementById('btn-restart').addEventListener('click', resetGame);
+
+    // --- 主循环更新逻辑 ---
+    function update() {
+      if (gameState !== 'PLAYING') return;
+
+      const hasDirKey = activeKeys['w'] || activeKeys['a'] || activeKeys['s'] || activeKeys['d'] ||
+                        activeKeys['arrowup'] || activeKeys['arrowleft'] || activeKeys['arrowdown'] || activeKeys['arrowright'];
+
+      if (hasDirKey) {
+        keyHoldDuration++;
+        if (keyHoldDuration > 7 && !player.isMoving) {
+          tryAdvancePlayer();
+        }
+      } else {
+        keyHoldDuration = 0;
+      }
+
+      if (player.isMoving) {
+        const destX = player.targetGx * TILE;
+        const destY = player.targetGy * TILE;
+
+        if (player.x < destX) player.x = Math.min(destX, player.x + player.speed);
+        else if (player.x > destX) player.x = Math.max(destX, player.x - player.speed);
+
+        if (player.y < destY) player.y = Math.min(destY, player.y + player.speed);
+        else if (player.y > destY) player.y = Math.max(destY, player.y - player.speed);
+
+        if (player.x === destX && player.y === destY) {
+          player.gx = player.targetGx;
+          player.gy = player.targetGy;
+          player.isMoving = false;
+        }
+      }
+
+      player.chassisAngle = lerpAngle(player.chassisAngle, player.targetChassisAngle, 0.28);
+
+      if (player.cooldown > 0) player.cooldown--;
+      if (activeKeys[' '] && player.cooldown === 0) {
+        firePlayerBullet();
+      }
+
+      // 摄像机平滑追踪
+      camera.targetX = player.x + TILE / 2 - canvas.width / 2;
+      camera.targetY = player.y + TILE / 2 - canvas.height / 2;
+      camera.targetX = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, camera.targetX));
+      camera.targetY = Math.max(0, Math.min(WORLD_HEIGHT - canvas.height, camera.targetY));
+      camera.x += (camera.targetX - camera.x) * 0.12;
+      camera.y += (camera.targetY - camera.y) * 0.12;
+
+      // 远距抛投炸弹定时
+      for (let i = bombs.length - 1; i >= 0; i--) {
+        const bm = bombs[i];
+        bm.timer--;
+        if (bm.timer <= 0) {
+          sound.playExplode();
+          screenShake = 12;
+          for (let dy = -2; dy <= 2; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
+              const bx = bm.gx + dx, by = bm.gy + dy;
+              if (bx > 0 && bx < COLS - 1 && by > 0 && by < ROWS - 1) {
+                if (grid[by][bx] === 1) { grid[by][bx] = 0; addShockwave(bx * TILE + 20, by * TILE + 20, '#6B7280'); }
+              }
+            }
+          }
+          for (let j = enemies.length - 1; j >= 0; j--) {
+            const e = enemies[j];
+            if (Math.abs(e.gx - bm.gx) <= 2 && Math.abs(e.gy - bm.gy) <= 2) {
+              addShockwave(e.x + 20, e.y + 20, '#000000', 16);
+              enemies.splice(j, 1);
+              score += 200;
+            }
+          }
+          uiScore.innerText = String(score).padStart(4, '0');
+          bombs.splice(i, 1);
+        }
+      }
+
+      // 生成敌机
+      if (Math.random() < 0.035) spawnEnemy();
+
+      // 敌机行为
+      enemies.forEach((enemy) => {
+        if (!enemy.isMoving) {
+          enemy.decisionTimer--;
+          if (enemy.decisionTimer <= 0) {
+            let targetDir = enemy.dir;
+
+            if (Sandbox.smartEnemyAI) {
+              const hasLoSPlayer = (enemy.gx === player.gx || enemy.gy === player.gy);
+              const hasLoSBase = (enemy.gx === BASE_POS.gx || enemy.gy === BASE_POS.gy);
+
+              if (hasLoSPlayer && Math.random() < 0.7) {
+                if (enemy.gx === player.gx) targetDir = enemy.gy < player.gy ? DIR.DOWN : DIR.UP;
+                else targetDir = enemy.gx < player.gx ? DIR.RIGHT : DIR.LEFT;
+                enemy.shootTimer = 5;
+              } else if (enemy.isSiege && hasLoSBase) {
+                if (enemy.gx === BASE_POS.gx) targetDir = enemy.gy < BASE_POS.gy ? DIR.DOWN : DIR.UP;
+                else targetDir = enemy.gx < BASE_POS.gx ? DIR.RIGHT : DIR.LEFT;
+                enemy.shootTimer = 5;
+              } else {
+                const targetObj = enemy.isSiege ? BASE_POS : { gx: player.gx, gy: player.gy };
+                const prefDirs = [];
+                if (targetObj.gy > enemy.gy) prefDirs.push(DIR.DOWN);
+                if (targetObj.gy < enemy.gy) prefDirs.push(DIR.UP);
+                if (targetObj.gx > enemy.gx) prefDirs.push(DIR.RIGHT);
+                if (targetObj.gx < enemy.gx) prefDirs.push(DIR.LEFT);
+
+                let chosen = null;
+                for (let d of prefDirs) {
+                  if (isCellFree(enemy.gx + DX[d], enemy.gy + DY[d], enemy)) {
+                    chosen = d; break;
+                  } else if (grid[enemy.gy + DY[d]][enemy.gx + DX[d]] === 1) {
+                    targetDir = d;
+                    enemy.shootTimer = 2;
+                    break;
+                  }
+                }
+                if (chosen !== null) targetDir = chosen;
+                else if (Math.random() < 0.3) targetDir = Math.floor(Math.random() * 4);
+              }
+            } else {
+              if (Math.random() < 0.3) targetDir = Math.floor(Math.random() * 4);
+            }
+
+            enemy.dir = targetDir;
+            enemy.targetAngle = TARGET_ANGLES[targetDir];
+
+            const nxtGx = enemy.gx + DX[targetDir];
+            const nxtGy = enemy.gy + DY[targetDir];
+            if (isCellFree(nxtGx, nxtGy, enemy)) {
+              enemy.targetGx = nxtGx;
+              enemy.targetGy = nxtGy;
+              enemy.isMoving = true;
+            }
+            enemy.decisionTimer = Math.floor(Math.random() * 20) + 12;
+          }
+        }
+
+        if (enemy.isMoving) {
+          const destX = enemy.targetGx * TILE;
+          const destY = enemy.targetGy * TILE;
+          if (enemy.x < destX) enemy.x = Math.min(destX, enemy.x + enemy.speed);
+          else if (enemy.x > destX) enemy.x = Math.max(destX, enemy.x - enemy.speed);
+          if (enemy.y < destY) enemy.y = Math.min(destY, enemy.y + enemy.speed);
+          else if (enemy.y > destY) enemy.y = Math.max(destY, enemy.y - enemy.speed);
+
+          if (enemy.x === destX && enemy.y === destY) {
+            enemy.gx = enemy.targetGx;
+            enemy.gy = enemy.targetGy;
+            enemy.isMoving = false;
+          }
+        }
+
+        enemy.renderAngle = lerpAngle(enemy.renderAngle, enemy.targetAngle, 0.22);
+
+        enemy.shootTimer--;
+        if (enemy.shootTimer <= 0) {
+          const eSpeed = enemy.isSiege ? 5.2 : 4.4;
+          bullets.push({
+            x: enemy.x + TILE / 2,
+            y: enemy.y + TILE / 2,
+            vx: DX[enemy.dir] * eSpeed,
+            vy: DY[enemy.dir] * eSpeed,
+            isPlayer: false,
+            isHeavy: enemy.isSiege
+          });
+          enemy.shootTimer = Math.floor(Math.random() * 70) + 40;
+        }
+      });
+
+      // --- 子弹空中对撞拦截系统 ---
+      if (Sandbox.canInterceptBullets) {
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          const b1 = bullets[i];
+          if (!b1 || !b1.isPlayer) continue;
+
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            const b2 = bullets[j];
+            if (!b2 || b2.isPlayer) continue;
+
+            if (Math.hypot(b1.x - b2.x, b1.y - b2.y) < 16) {
+              sound.playIntercept();
+              addShockwave((b1.x + b2.x) / 2, (b1.y + b2.y) / 2, '#4F46E5', 10);
+              bullets.splice(Math.max(i, j), 1);
+              bullets.splice(Math.min(i, j), 1);
+              interceptedCount++;
+              uiIntercepted.innerText = interceptedCount;
+              break;
+            }
+          }
+        }
+      }
+
+      // --- 子弹位移与碰撞判定 ---
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+
+        if (b.x < 0 || b.x > WORLD_WIDTH || b.y < 0 || b.y > WORLD_HEIGHT) {
+          bullets.splice(i, 1);
+          continue;
+        }
+
+        const col = Math.floor(b.x / TILE);
+        const row = Math.floor(b.y / TILE);
+
+        if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+          const tile = grid[row][col];
+          if (tile === 1) {
+            grid[row][col] = 0;
+            addShockwave(col * TILE + 20, row * TILE + 20, '#6B7280');
+            sound.playImpact();
+            bullets.splice(i, 1);
+            continue;
+          } else if (tile === 2) {
+            addShockwave(b.x, b.y, '#111827');
+            sound.playImpact();
+            bullets.splice(i, 1);
+            continue;
+          } else if (tile === 3) {
+            bullets.splice(i, 1);
+            if (!isCheatMode) {
+              baseShield--;
+              sound.playShieldHit();
+              addShockwave(col * TILE + 20, row * TILE + 20, '#10B981', 18);
+              uiBaseHp.innerText = `${Math.max(0, baseShield)} / ${Sandbox.baseMaxShield}`;
+              uiBaseBar.style.width = `${Math.max(0, (baseShield / Sandbox.baseMaxShield) * 100)}%`;
+
+              if (baseShield <= 0) {
+                grid[row][col] = 4;
+                sound.playExplode();
+                gameState = 'GAMEOVER';
+              }
+            }
+            continue;
+          }
+        }
+
+        if (b.isPlayer) {
+          let hitIdx = -1;
+          for (let j = 0; j < enemies.length; j++) {
+            const e = enemies[j];
+            if (b.x > e.x + 4 && b.x < e.x + TILE - 4 && b.y > e.y + 4 && b.y < e.y + TILE - 4) {
+              hitIdx = j; break;
+            }
+          }
+          if (hitIdx !== -1) {
+            const enemyHit = enemies[hitIdx];
+            enemyHit.hp--;
+            bullets.splice(i, 1);
+            sound.playImpact();
+
+            if (enemyHit.hp <= 0) {
+              addShockwave(enemyHit.x + 20, enemyHit.y + 20, '#000000', 16);
+              enemies.splice(hitIdx, 1);
+              score += enemyHit.isSiege ? 250 : 150;
+              uiScore.innerText = String(score).padStart(4, '0');
+              sound.playExplode();
+            } else {
+              addShockwave(enemyHit.x + 20, enemyHit.y + 20, '#E5E7EB', 6);
+            }
+            continue;
+          }
+        } else {
+          if (player.invulnerable <= 0 &&
+              b.x > player.x + 4 && b.x < player.x + TILE - 4 &&
+              b.y > player.y + 4 && b.y < player.y + TILE - 4) {
+            addShockwave(player.x + 20, player.y + 20, '#0A0A0A');
+            bullets.splice(i, 1);
+
+            if (!isCheatMode) {
+              playerHp -= (b.isHeavy ? 2 : 1);
+              sound.playImpact();
+              uiHp.innerText = `${Math.max(0, playerHp)} / ${Sandbox.playerMaxHp}`;
+              uiHpBar.style.width = `${Math.max(0, (playerHp / Sandbox.playerMaxHp) * 100)}%`;
+
+              if (playerHp <= 0) {
+                sound.playExplode();
+                gameState = 'GAMEOVER';
+              } else {
+                player.invulnerable = 60;
+              }
+            }
+            continue;
+          }
+        }
+      }
+
+      if (player.invulnerable > 0) player.invulnerable--;
+      if (screenShake > 0) screenShake--;
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+      for (let i = railgunBeams.length - 1; i >= 0; i--) {
+        railgunBeams[i].life--;
+        if (railgunBeams[i].life <= 0) railgunBeams.splice(i, 1);
+      }
+      for (let i = sonicWaves.length - 1; i >= 0; i--) {
+        const sw = sonicWaves[i];
+        sw.currentRadius += 5;
+        sw.life--;
+        if (sw.life <= 0) sonicWaves.splice(i, 1);
+      }
+    }
+
+    // --- 坦克底盘与独立炮管渲染 ---
+    function drawTankModel(px, py, chassisAngleDeg, turretAngleRad, isPlayer = false, isHeavy = false) {
+      ctx.save();
+      const centerX = px + TILE / 2;
+      const centerY = py + TILE / 2;
+      ctx.translate(centerX, centerY);
+
+      const size = isHeavy ? 36 : 32;
+      const colorOutline = '#0A0A0A';
+
+      // 1. 绘制底盘履带与车体（沿底盘角度旋转）
+      ctx.save();
+      ctx.rotate((chassisAngleDeg * Math.PI) / 180);
+
+      ctx.fillStyle = isPlayer ? '#E5E7EB' : '#111827';
+      ctx.strokeStyle = colorOutline;
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(-size / 2, -size / 2, 7, size);
+      ctx.strokeRect(-size / 2, -size / 2, 7, size);
+      ctx.fillRect(size / 2 - 7, -size / 2, 7, size);
+      ctx.strokeRect(size / 2 - 7, -size / 2, 7, size);
+
+      ctx.fillStyle = isPlayer ? '#FFFFFF' : (isHeavy ? '#000000' : '#1F2937');
+      ctx.fillRect(-size / 2 + 5, -size / 2 + 3, size - 10, size - 6);
+      ctx.strokeRect(-size / 2 + 5, -size / 2 + 3, size - 10, size - 6);
+      ctx.restore();
+
+      // 2. 绘制独立炮塔与身管（沿炮管角度旋转，玩家完全锁定鼠标）
+      ctx.save();
+      ctx.rotate(turretAngleRad);
+
+      ctx.strokeStyle = '#0A0A0A';
+      ctx.lineWidth = isHeavy ? 3.5 : 2.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(isPlayer ? 22 : 16, 0); // 炮口向右延伸为基准角 0
+      ctx.stroke();
+
+      ctx.fillStyle = isPlayer ? '#0A0A0A' : '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(0, 0, isHeavy ? 6.5 : 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      if (isPlayer) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(-1.5, -1.5, 3, 3);
+      }
+      ctx.restore();
+
+      // 3. 护盾环
+      if (isPlayer && (isCheatMode || player.invulnerable > 0)) {
+        ctx.strokeStyle = '#0A0A0A';
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-size / 2 - 4, -size / 2 - 4, size + 8, size + 8);
+      }
+
+      ctx.restore();
+    }
+
+    function renderRadar() {
+      radarCtx.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
+      const scale = radarCanvas.width / (COLS * TILE);
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (grid[r][c] === 2) {
+            radarCtx.fillStyle = '#111827';
+            radarCtx.fillRect(c * TILE * scale, r * TILE * scale, TILE * scale, TILE * scale);
+          } else if (grid[r][c] === 3) {
+            radarCtx.fillStyle = '#059669';
+            radarCtx.fillRect(c * TILE * scale - 1, r * TILE * scale - 1, 5, 5);
+          }
+        }
+      }
+
+      enemies.forEach((e) => {
+        radarCtx.fillStyle = e.isSiege ? '#7C3AED' : '#EF4444';
+        radarCtx.fillRect(e.x * scale - 1, e.y * scale - 1, 3.5, 3.5);
+      });
+
+      radarCtx.fillStyle = '#000000';
+      radarCtx.fillRect(player.x * scale - 1.5, player.y * scale - 1.5, 4, 4);
+
+      radarCtx.strokeStyle = 'rgba(0,0,0,0.35)';
+      radarCtx.lineWidth = 1;
+      radarCtx.strokeRect(camera.x * scale, camera.y * scale, canvas.width * scale, canvas.height * scale);
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      if (screenShake > 0) {
+        ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+      }
+      ctx.translate(-Math.round(camera.x), -Math.round(camera.y));
+
+      // 地图底网格
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.035)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= WORLD_WIDTH; i += TILE) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_HEIGHT); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_WIDTH, i); ctx.stroke();
+      }
+
+      // 绘制地图掩体
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const type = grid[r][c];
+          const px = c * TILE, py = r * TILE;
+
+          if (type === 1) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+            ctx.strokeStyle = '#D1D5DB';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(px + 2, py + 2, TILE - 4, TILE - 4);
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#E5E7EB';
+            ctx.moveTo(px + 4, py + TILE / 2); ctx.lineTo(px + TILE - 4, py + TILE / 2);
+            ctx.moveTo(px + TILE / 2, py + 4); ctx.lineTo(px + TILE / 2, py + TILE - 4);
+            ctx.stroke();
+          } else if (type === 2) {
+            ctx.fillStyle = '#0A0A0A';
+            ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(px + 4, py + 4, 2, 2);
+          } else if (type === 3) {
+            ctx.save();
+            ctx.translate(px + 20, py + 20);
+            ctx.fillStyle = '#0A0A0A';
+            ctx.fillRect(-12, -12, 24, 24);
+            ctx.strokeStyle = '#0A0A0A';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(-16, -16, 32, 32);
+
+            ctx.strokeStyle = '#059669';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 22, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          } else if (type === 4) {
+            ctx.strokeStyle = '#9CA3AF';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(px + 8, py + 8); ctx.lineTo(px + 32, py + 32);
+            ctx.moveTo(px + 32, py + 8); ctx.lineTo(px + 8, py + 32);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // 绘制落点战术炸弹
+      bombs.forEach((bm) => {
+        ctx.save();
+        ctx.translate(bm.x, bm.y);
+        ctx.strokeStyle = '#0A0A0A';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 10 + (bm.timer % 6), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#000000';
+        ctx.font = '700 11px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.fillText('💣', 0, 4);
+        ctx.restore();
+      });
+
+      // 绘制任意倾角高能贯穿射线
+      railgunBeams.forEach((rg) => {
+        const alpha = rg.life / rg.maxLife;
+        ctx.strokeStyle = `rgba(10, 10, 10, ${alpha})`;
+        ctx.lineWidth = 4 * alpha + 1;
+        ctx.beginPath();
+        ctx.moveTo(rg.x1, rg.y1);
+        ctx.lineTo(rg.x2, rg.y2);
+        ctx.stroke();
+      });
+
+      // 绘制 3x3 战术声波环
+      sonicWaves.forEach((sw) => {
+        const alpha = sw.life / sw.maxLife;
+        ctx.strokeStyle = `rgba(10, 10, 10, ${alpha * 0.7})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(sw.x, sw.y, sw.currentRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // 渲染玩家与敌军
+      drawTankModel(player.x, player.y, player.chassisAngle, player.turretAngle, true);
+      enemies.forEach((e) => {
+        const eTurretAngle = (e.renderAngle - 90) * Math.PI / 180;
+        drawTankModel(e.x, e.y, e.renderAngle, eTurretAngle, false, e.isSiege);
+      });
+
+      // 绘制子弹
+      bullets.forEach((b) => {
+        if (b.isPlayer) {
+          ctx.fillStyle = '#0A0A0A';
+          ctx.fillRect(b.x - 2.5, b.y - 2.5, 5, 5);
+        } else {
+          ctx.fillStyle = b.isHeavy ? '#7C3AED' : '#DC2626';
+          ctx.fillRect(b.x - 3, b.y - 3, 6, 6);
+        }
+      });
+
+      // 冲击粒子
+      particles.forEach((p) => {
+        ctx.fillStyle = p.color;
+        const s = (p.life / p.maxLife) * 3;
+        ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+      });
+
+      ctx.restore();
+
+      // 失败结算
+      if (gameState === 'GAMEOVER') {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0A0A0A';
+        ctx.font = '700 24px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.fillText('MISSION COMPROMISED', 340, 310);
+        ctx.font = '500 13px "JetBrains Mono"';
+        ctx.fillStyle = '#4B5563';
+        ctx.fillText('基站防线瓦解 或 机体损毁 // 按 [空格] 或 [R] 重新启动', 340, 345);
+      }
+
+      renderRadar();
+    }
+
+    // 虚拟 SOL 时间
+    const timeEl = document.getElementById('system-time');
+    let solSeconds = 48200;
+    setInterval(() => {
+      solSeconds++;
+      const hrs = String(Math.floor((solSeconds / 3600) % 24)).padStart(2, '0');
+      const mins = String(Math.floor((solSeconds / 60) % 60)).padStart(2, '0');
+      const secs = String(solSeconds % 60).padStart(2, '0');
+      timeEl.textContent = `${hrs}:${mins}:${secs} SOL`;
+    }, 1000);
+
+    function loop() {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
