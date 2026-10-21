@@ -1532,3 +1532,14 @@ html.boot-off .contact-card {
   border-color: #ff5c5c;
   color: #0a0a0a;
 }
+
+/* 故障感简介 */
+.bio-glitch {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 2.1;
+  letter-spacing: .02em;
+  color: var(--ink-3);
+  word-break: break-word;
+  text-shadow: 0 0 12px rgba(255, 255, 255, .08);
+}
