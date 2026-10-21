@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- ✏️【改这里】浏览器标签页上显示的标题：格式为 名字 · 职位 -->
 <title>陈亦然 · 产品设计师</title>
+<!-- ✏️【改这里】搜索引擎和分享时显示的简介 -->
 <meta name="description" content="陈亦然，产品设计师。专注 B 端产品体验与设计系统建设，现居杭州。" />
 <meta name="author" content="陈亦然" />
 <meta property="og:title" content="陈亦然 · 产品设计师" />
@@ -48,6 +50,7 @@
 <main id="main">
 
   <!-- ============ HERO ============ -->
+  <!-- ✏️【第一块：首屏】改下面 4 处：左上角的职位、大标题、两行介绍、右边的名片 -->
   <section class="hero" id="top">
     <div class="wrap hero-grid">
       <div class="hero-text">
@@ -67,8 +70,9 @@
       </div>
 
       <aside class="id-card" aria-label="名片">
+        <!-- ✏️【改这里】名片：头像里的字、姓名、英文名、坐标、方向、状态、三个链接 -->
         <div class="id-top">
-          <!-- 换成自己的照片： <img class="avatar" src="assets/avatar.jpg" alt="陈亦然" /> -->
+          <!-- 想换成照片：把下面这行 <div class="avatar"> 换成 <img class="avatar" src="assets/avatar.jpg" alt="你的名字" /> -->
           <div class="avatar" aria-hidden="true">陈</div>
           <div>
             <div class="id-name">陈亦然</div>
@@ -81,8 +85,7 @@
           <div><dt>状态</dt><dd><span class="dot-live"></span>开放远程合作</dd></div>
         </dl>
         <div class="id-links">
-          <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
-          <a href="#" target="_blank" rel="noopener">即刻</a>
+          <a href="https://github.com/aichicucumber-afk" target="_blank" rel="noopener">GitHub</a>
           <a href="mailto:hi@example.com">Email</a>
         </div>
       </aside>
@@ -98,6 +101,7 @@
       </div>
 
       <div class="about-grid">
+        <!-- ✏️【第二块：关于】改下面三段文字，写你自己的经历。可以只留两段，多的整段删掉 -->
         <div class="reveal">
           <p class="lead">
             我在 2019 年从交互设计转进 B 端，第一个项目是把一套 14 年前的内部系统重做。
@@ -114,6 +118,7 @@
         </div>
 
         <div class="about-side reveal">
+          <!-- ✏️【改这里】技能标签：每组 4 个，想加减就往 <ul class="chips"> 里面复制/删除一个 <li>文字</li> -->
           <h3 class="side-title">能力</h3>
           <div class="skill-group">
             <span class="skill-label">设计</span>
@@ -148,6 +153,13 @@
 
       <div class="works">
 
+        <!-- ✏️【第三块：作品】一共 3 张卡片，每张改 5 处：
+             1) 灰底方块里的两个字（缩略图占位）
+             2) work-meta 里的「分类」和「年份」
+             3) <h3> 里的项目名
+             4) <p> 里的一句成果
+             5) href="#" 换成项目链接（没有就把整张卡片删掉）
+             想加第 4 张卡：把一整段 <a class="work reveal"> … </a> 复制一份改内容 -->
         <a class="work reveal" href="#" target="_blank" rel="noopener">
           <div class="thumb thumb-a"><span>Arbor</span></div>
           <div class="work-body">
@@ -181,7 +193,7 @@
       </div>
 
       <p class="works-more">
-        更多项目在 <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a> 上，或直接来信索取完整作品集。
+        更多项目在 <a href="https://github.com/aichicucumber-afk" target="_blank" rel="noopener">GitHub</a> 上，或直接来信索取完整作品集。
       </p>
     </div>
   </section>
@@ -195,6 +207,8 @@
       </div>
 
       <div class="contact-inner reveal">
+        <!-- ✏️【第四块：联系】邮箱在整页出现 3 次（这里 1 次、上面名片 1 次、首屏按钮 1 次），
+             用编辑器的「查找替换」一次全改掉；也可以逐个改 mailto: 后面的地址 -->
         <p class="contact-lead">有项目想做，或者只是想聊聊设计？</p>
         <a class="contact-mail" href="mailto:hi@example.com">hi@example.com</a>
         <p class="contact-note">通常 24 小时内回复。接受全职机会与远程咨询。</p>
@@ -206,6 +220,7 @@
 
 <footer class="footer">
   <div class="wrap footer-inner">
+    <!-- ✏️【改这里】页脚的名字 -->
     <span>© <span id="year">2026</span> 陈亦然</span>
     <span class="footer-meta">Built with plain HTML · Hosted on GitHub Pages</span>
   </div>
