@@ -16,7 +16,8 @@
 document.documentElement.classList.add('js');
 /* 本次会话已经进过站：直接跳过启动遮罩，避免回主页时又弹一次 */
 try {
-  if (sessionStorage.getItem('boot-seen') === '1') {
+  var _r = document.referrer || '';
+  if (_r && _r.indexOf(location.host) !== -1) {
     document.documentElement.classList.add('boot-off');
   }
 } catch (e) {}
@@ -148,9 +149,9 @@ setTimeout(function () {
       <div class="panel-head"><span>READING</span><span class="zh">在读</span><span class="idx"></span></div>
       <!-- ✏️【改这里】书名和读到哪了，--w 要和数字一致 -->
       <div class="bars">
-        <div class="bar"><span class="bar-name">《三体》</span><span class="bar-val">62%</span><i style="--w:62%"></i></div>
-        <div class="bar"><span class="bar-name">《百年孤独》</span><span class="bar-val">30%</span><i style="--w:30%"></i></div>
-        <div class="bar"><span class="bar-name">《局外人》</span><span class="bar-val">88%</span><i style="--w:88%"></i></div>
+        <div class="bar"><span class="bar-name">《田园交响曲》</span><span class="bar-val">100%</span><i style="--w:100%"></i></div>
+        <div class="bar"><span class="bar-name">《银河帝国系列》</span><span class="bar-val">40%</span><i style="--w:40%"></i></div>
+        <div class="bar"><span class="bar-name">《东野圭吾全集》</span><span class="bar-val">70%</span><i style="--w:70%"></i></div>
       </div>
     </section>
 
@@ -228,21 +229,24 @@ setTimeout(function () {
       <div class="panel-head"><span>GALLERY</span><span class="zh">作品集</span><span class="idx"></span></div>
       <!-- ✏️【改这里】每格作品：改编号、名字、类型、年份、链接 -->
       <div class="gallery">
-        <a class="shot shot-a" data-idx="01" href="works/terrain-survey.html" target="_blank" rel="noopener">
+        <a class="shot shot-a has-img" data-idx="01" href="works/terrain-survey.html" target="_blank" rel="noopener">
+          <img class="shot-img" src="works/thumbs/terrain-survey.jpg" alt="" loading="lazy" />
           <span class="shot-idx">01</span>
           <span class="shot-name">地形测绘</span>
           <span class="shot-meta">实验 · 2026</span>
           <span class="shot-go">VIEW →</span>
         </a>
 
-        <a class="shot shot-b" data-idx="02" href="works/tank-aim.html" target="_blank" rel="noopener">
+        <a class="shot shot-b has-img" data-idx="02" href="works/tank-aim.html" target="_blank" rel="noopener">
+          <img class="shot-img" src="works/thumbs/tank-aim.jpg" alt="" loading="lazy" />
           <span class="shot-idx">02</span>
           <span class="shot-name">装甲坦克</span>
           <span class="shot-meta">游戏 · 2026</span>
           <span class="shot-go">VIEW →</span>
         </a>
 
-        <a class="shot shot-c" data-idx="03" href="works/chem-equilibrium.html" target="_blank" rel="noopener">
+        <a class="shot shot-c has-img" data-idx="03" href="works/chem-equilibrium.html" target="_blank" rel="noopener">
+          <img class="shot-img" src="works/thumbs/chem-equilibrium.jpg" alt="" loading="lazy" />
           <span class="shot-idx">03</span>
           <span class="shot-name">化学平衡</span>
           <span class="shot-meta">实验 · 2026</span>
