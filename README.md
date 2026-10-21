@@ -53,43 +53,41 @@ python3 -m http.server 8000
 
 ---
 
-## 3. 发布到 GitHub Pages
+## 3. 已上线
 
-### 方式 A：网页建仓库 + 命令行推送（推荐）
-
-1. 在 GitHub 新建仓库，**仓库名必须叫 `<你的用户名>.github.io`**，例如用户名是 `liuyunwen` 就叫 `liuyunwen.github.io`。选 Public。
-2. 在本目录执行（把 `USERNAME` 换成你的用户名）：
-
-```bash
-cd /Users/liuyunwen/WorkBuddy/2026-10-21-19-08-13
-git init -b main
-git add .
-git commit -m "init: personal site"
-git remote add origin https://github.com/USERNAME/USERNAME.github.io.git
-git push -u origin main
-```
-
-3. 等 1 分钟左右，访问 `https://USERNAME.github.io`。
-
-> 首次 `push` 会要求认证。GitHub 已不接受密码，用 **Personal Access Token**（Settings → Developer settings → Personal access tokens → Fine-grained tokens，勾选该仓库的 Contents: Read and write）当密码填。或者先 `brew install gh && gh auth login`，之后 push 会走浏览器授权。
-
-### 方式 B：纯网页
-
-新建同名仓库 → 上传 `index.html` 和 `assets/` 文件夹 → Settings → Pages → Source 选 `main` 分支 `/ (root)` → Save。
+| 项 | 值 |
+|---|---|
+| 站点 | https://aichicucumber-afk.github.io/ |
+| 仓库 | https://github.com/aichicucumber-afk/aichicucumber-afk.github.io |
+| 分支 / 目录 | `main` / 根目录，Pages 已自动启用 |
+| 本机 Git 身份 | 江虎 · `aichicucumber-afk@users.noreply.github.com`（只配在本仓库，未动全局） |
 
 ### 更新内容
 
+改完 `index.html` 直接推：
+
 ```bash
+cd /Users/liuyunwen/WorkBuddy/2026-10-21-19-08-13
 git add -A && git commit -m "update content" && git push
 ```
 
-推送后 30 秒到 1 分钟生效，浏览器记得强刷（Cmd+Shift+R）。
+推送后 30 秒到 1 分钟生效，强制刷新（Cmd+Shift+R）看结果。
+
+### 认证说明
+
+已用 GitHub CLI 完成浏览器授权，凭证存在系统钥匙串（keyring）。`gh` 装在 `~/.local/bin/gh`，已在 PATH 里。
+
+凭证失效时重新授权：
+
+```bash
+gh auth login --hostname github.com --git-protocol https --web
+```
 
 ---
 
 ## 4. 绑定自己的域名（可选）
 
-1. 域名商处加一条 CNAME 记录：`www` → `USERNAME.github.io`。
+1. 域名商处加一条 CNAME 记录：`www` → `aichicucumber-afk.github.io`。
 2. 本目录新建文件 `CNAME`，内容一行：`www.你的域名.com`（不要带 https://）。
 3. `git add CNAME && git commit -m "add domain" && git push`。
 4. 仓库 Settings → Pages → Custom domain 填入同域名，勾选 Enforce HTTPS（证书签发要等几分钟到几小时）。
