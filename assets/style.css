@@ -1546,3 +1546,25 @@ html.boot-off .contact-card {
   word-break: break-word;
   text-shadow: 0 0 12px rgba(255, 255, 255, .08);
 }
+
+/* 有截图的作品缩略图 */
+.work-thumb.has-img {
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+}
+.work-thumb.has-img::before { display: none; }
+.work-thumb.has-img b { display: none; }
+
+/* 截图缩略图：遮罩单独一层，便于 hover 提亮 */
+.work-thumb.has-img { background-position: center center; }
+.work-thumb.has-img::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 10, 9, .34) 0%, rgba(8, 10, 9, .04) 40%, rgba(8, 10, 9, .58) 100%);
+  transition: opacity .3s var(--ease);
+  pointer-events: none;
+}
+.work-card:hover .work-thumb.has-img::after { opacity: .45; }
+.work-thumb .badge { z-index: 2; }
