@@ -25,7 +25,7 @@
 浏览器地址栏输入：
 
 ```
-https://github.com/aichicucumber-afk/aichicucumber-afk.github.io
+https://github.com/jianghu-dev/jianghu-dev.github.io
 ```
 
 页面中间有一个 **`index.html`**，点它。进去后是一堆文字和尖括号，别慌，那是它本来的样子。
@@ -70,7 +70,7 @@ https://github.com/aichicucumber-afk/aichicucumber-afk.github.io
 
 ### 第 6 步 · 看结果
 
-等 1 分钟，打开 https://aichicucumber-afk.github.io/ ，按 `Command + Shift + R` 强制刷新。
+等 1 分钟，打开 https://jianghu-dev.github.io/ ，按 `Command + Shift + R` 强制刷新。
 
 ### 改坏了怎么退回去
 
@@ -133,10 +133,10 @@ python3 -m http.server 8000
 
 | 项 | 值 |
 |---|---|
-| 站点 | https://aichicucumber-afk.github.io/ |
-| 仓库 | https://github.com/aichicucumber-afk/aichicucumber-afk.github.io |
+| 站点 | https://jianghu-dev.github.io/ |
+| 仓库 | https://github.com/jianghu-dev/jianghu-dev.github.io |
 | 分支 / 目录 | `main` / 根目录，Pages 已自动启用 |
-| 本机 Git 身份 | 江虎 · `aichicucumber-afk@users.noreply.github.com`（只配在本仓库） |
+| 本机 Git 身份 | 江虎 · `jianghu-dev@users.noreply.github.com`（只配在本仓库） |
 
 ### 更新内容
 
@@ -197,7 +197,7 @@ gh auth login --hostname github.com --git-protocol https --web
 
 ## 6. 绑定自己的域名（可选）
 
-1. 域名商处加 CNAME 记录：`www` → `aichicucumber-afk.github.io`。
+1. 域名商处加 CNAME 记录：`www` → `jianghu-dev.github.io`。
 2. 本目录新建文件 `CNAME`，内容一行：`www.你的域名.com`（不带 https://）。
 3. `git add CNAME && git commit -m "add domain" && git push`。
 4. 仓库 Settings → Pages → Custom domain 填同域名，勾选 Enforce HTTPS（证书要等几分钟到几小时）。
