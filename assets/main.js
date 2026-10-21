@@ -339,7 +339,7 @@
   if (qqEntry && qqLock) {
     /* 只存哈希，源码里没有明文：'透明人' → 91e17de */
     var ANSWER_HASH = '91e17de';
-    var QQ_UIN = '';
+    var QQ_UIN = (function () { try { return atob('Mzk1MDI0ODE4Ng=='); } catch (e) { return ''; } })();
 
     var qqForm = document.getElementById('qqForm');
     var qqInput = document.getElementById('qqInput');
@@ -374,7 +374,8 @@
       box.innerHTML =
         '<div class="lock-head"><span>ACCESS GRANTED</span><span>QC-01</span></div>' +
         '<p class="lock-q">解锁成功。</p>' +
-        '<p class="lock-result"><span>QQ</span>' + (QQ_UIN || '待填写') + '</p>' +
+        '<p class="lock-result"><span>QQ</span>' + (QQ_UIN || '—') + '</p>' +
+        '<a class="lock-open" href="https://wpa.qq.com/msgrd?v=3&uin=' + QQ_UIN + '&site=qq&menu=yes" target="_blank" rel="noopener">打开 QQ 对话</a>' +
         '<button class="lock-close" id="qqClose2" type="button">关闭</button>';
       box.querySelector('#qqClose2').addEventListener('click', closeLock);
       try { sessionStorage.setItem('qq-open', '1'); } catch (e) {}
