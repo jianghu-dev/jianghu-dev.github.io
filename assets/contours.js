@@ -173,7 +173,7 @@
     var dt = ts - lastTs;
     lastTs = ts;
     if (dt > 120) dt = 120;
-    clock += dt * 0.00069;
+    clock += dt * 0.00022;
     draw(false);
     if (running) raf = requestAnimationFrame(loop);
   }
