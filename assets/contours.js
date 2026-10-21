@@ -89,9 +89,9 @@
       var yPart = j * cell * NOISE_SCALE;
       for (var i = 0; i < cols; i++) {
         field[j * cols + i] = fbm(
-          i * cell * NOISE_SCALE + t * 0.03,
-          yPart + t * 0.014,
-          t * 0.26
+          i * cell * NOISE_SCALE + t * 0.09,
+          yPart + t * 0.02,
+          t * 0.02
         );
       }
     }
@@ -173,7 +173,7 @@
     var dt = ts - lastTs;
     lastTs = ts;
     if (dt > 120) dt = 120;
-    clock += dt * 0.00011;
+    clock += dt * 0.00069;
     draw(false);
     if (running) raf = requestAnimationFrame(loop);
   }
