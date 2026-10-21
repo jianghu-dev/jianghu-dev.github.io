@@ -7,21 +7,21 @@
 :root {
   color-scheme: dark;
 
-  --bg: #0a0a0a;
-  --panel: rgba(22, 22, 22, .88);
-  --panel-solid: #161616;
-  --ink: #f9fafb;
-  --ink-1: #f3f4f6;
-  --ink-2: #d1d5db;
-  --ink-3: #9ca3af;
-  --ink-4: #6b7280;
-  --line: rgba(255, 255, 255, .1);
-  --line-soft: rgba(255, 255, 255, .06);
-  --grid: rgba(255, 255, 255, .04);
-  --hover: rgba(255, 255, 255, .05);
-  --inv: #0a0a0a;
-  --tick-bg: #1f2937;
-  --tick-fg: #f9fafb;
+  --bg: #070c09;
+  --panel: rgba(13, 24, 18, .88);
+  --panel-solid: #0d1812;
+  --ink: #6ef0a0;
+  --ink-1: #d9f6e4;
+  --ink-2: #a9dabd;
+  --ink-3: #6f9b83;
+  --ink-4: #47685a;
+  --line: rgba(110, 240, 160, .16);
+  --line-soft: rgba(110, 240, 160, .085);
+  --grid: rgba(110, 240, 160, .062);
+  --hover: rgba(110, 240, 160, .07);
+  --inv: #06100a;
+  --tick-bg: #5eeb94;
+  --tick-fg: #06100a;
 
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "JetBrains Mono", monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -29,7 +29,7 @@
   --r: 10px;
   --gap: 14px;
   --max: 1240px;
-  --shadow: 0 4px 24px -2px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
+  --shadow: 0 4px 26px -2px rgba(0, 0, 0, .6), 0 0 0 1px rgba(110, 240, 160, .03);
   --ease: cubic-bezier(.22, .61, .36, 1);
 }
 
@@ -190,9 +190,9 @@ ul, dl, dd { margin: 0; padding: 0; list-style: none; }
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(10, 10, 10, .9) 0%,
-    rgba(10, 10, 10, .42) 46%,
-    rgba(10, 10, 10, .78) 80%,
+    rgba(5, 12, 8, .92) 0%,
+    rgba(6, 16, 10, .46) 46%,
+    rgba(6, 14, 9, .8) 80%,
     var(--bg) 100%
   );
 }
@@ -635,10 +635,10 @@ img.avatar {
   width: 96px;
   height: 96px;
   display: block;
-  filter: grayscale(1) contrast(1.06) brightness(.88);
+  filter: saturate(.9) brightness(1.02);
   transition: filter .45s var(--ease);
 }
-img.avatar:hover { filter: grayscale(0) brightness(1); }
+img.avatar:hover { filter: saturate(1.15) brightness(1.12); }
 
 .link-grid-single { grid-template-columns: 1fr; }
 
@@ -1117,8 +1117,8 @@ img.avatar:hover { filter: grayscale(0) brightness(1); }
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  background: #0a0a0a;
-  color: #f8f9fa;
+  background: #050b07;
+  color: var(--ink);
   font-family: var(--mono);
   transition: opacity .5s var(--ease), transform .5s var(--ease);
 }
@@ -1134,21 +1134,21 @@ html.boot-off .boot { display: none; }
   align-items: center;
   gap: 10px;
   padding: 11px 16px;
-  background: #141414;
-  border-bottom: 1px solid #262626;
+  background: #0a120d;
+  border-bottom: 1px solid rgba(110, 240, 160, .18);
   font-size: 10px;
   letter-spacing: .14em;
-  color: #8b929c;
+  color: var(--ink-4);
 }
 .boot-dots { display: flex; gap: 5px; }
 .boot-dots i {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #3a3a3a;
+  background: #1e3a28;
 }
-.boot-dots i:first-child { background: #f8f9fa; }
-.boot-title { color: #d1d5db; letter-spacing: .08em; }
+.boot-dots i:first-child { background: var(--ink); }
+.boot-title { color: var(--ink-2); letter-spacing: .08em; }
 .boot-mode { margin-left: auto; font-size: 9px; }
 
 .boot-log {
@@ -1158,12 +1158,12 @@ html.boot-off .boot { display: none; }
   font-size: 12px;
   line-height: 2.05;
   letter-spacing: .02em;
-  color: #6b7280;
+  color: var(--ink-4);
   white-space: pre-wrap;
   overflow: hidden;
 }
 .boot-log b {
-  color: #f8f9fa;
+  color: var(--ink);
   font-weight: 500;
 }
 .boot-log .ln {
@@ -1182,15 +1182,15 @@ html.boot-off .boot { display: none; }
   gap: 8px;
   padding: 0 16px 12px;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--ink-3);
   opacity: 0;
   animation: lineIn .3s ease .1s forwards;
 }
-.boot-ps { color: #f8f9fa; }
+.boot-ps { color: var(--ink); }
 .boot-caret {
   width: 7px;
   height: 13px;
-  background: #f8f9fa;
+  background: var(--ink);
   animation: caret 1.05s steps(1) infinite;
 }
 @keyframes caret { 50% { opacity: 0; } }
@@ -1203,15 +1203,15 @@ html.boot-off .boot { display: none; }
   padding: 0 16px 28px;
   font-size: 11.5px;
   letter-spacing: .1em;
-  color: #f8f9fa;
+  color: var(--ink-1);
   opacity: 0;
   animation: readyIn .45s var(--ease) forwards;
 }
 .boot-ready .k {
   padding: 2px 9px;
-  border: 1px solid #3a3a3a;
+  border: 1px solid rgba(110, 240, 160, .4);
   border-radius: 3px;
-  background: #1a1a1a;
+  background: rgba(110, 240, 160, .1);
   font-size: 10px;
   letter-spacing: .14em;
   animation: keyPulse 1.7s ease-in-out infinite;
@@ -1221,8 +1221,8 @@ html.boot-off .boot { display: none; }
   to   { opacity: 1; transform: none; }
 }
 @keyframes keyPulse {
-  0%, 100% { border-color: #3a3a3a; color: #d1d5db; }
-  50%      { border-color: #f8f9fa; color: #ffffff; }
+  0%, 100% { border-color: rgba(110, 240, 160, .3); color: var(--ink-3); }
+  50%      { border-color: var(--ink); color: var(--ink); }
 }
 
 /* ---------- 磁吸光标 ---------- */
