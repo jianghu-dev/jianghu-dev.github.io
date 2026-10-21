@@ -14,7 +14,7 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-  var W = 0, H = 0, cell = 30, cols = 0, rows = 0;
+  var W = 0, H = 0, cell = 22, cols = 0, rows = 0;
   var field = null;
   var clock = 0;
   var raf = null;
@@ -23,7 +23,7 @@
   var LEVELS = 6;
   var STEP = 0.075;
   var BASE = 0.24;
-  var NOISE_SCALE = 1 / 190;
+  var NOISE_SCALE = 1 / 240;
 
   function hash(x, y, z) {
     var n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
@@ -64,7 +64,7 @@
     canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    cell = W < 760 ? 38 : 30;
+    cell = W < 760 ? 34 : 22;
     cols = Math.ceil(W / cell) + 2;
     rows = Math.ceil(H / cell) + 2;
     field = new Float32Array(cols * rows);
@@ -89,15 +89,16 @@
       var yPart = j * cell * NOISE_SCALE;
       for (var i = 0; i < cols; i++) {
         field[j * cols + i] = fbm(
-          i * cell * NOISE_SCALE + t * 0.055,
-          yPart + t * 0.028,
-          t * 0.5
+          i * cell * NOISE_SCALE + t * 0.03,
+          yPart + t * 0.014,
+          t * 0.26
         );
       }
     }
 
     ctx.lineWidth = 1;
     ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.strokeStyle = staticFrame
       ? 'rgba(255, 255, 255, 0.12)'
       : 'rgba(255, 255, 255, 0.125)';
@@ -164,9 +165,15 @@
     return [x0, lerp(y0, y1, t)];
   }
 
-  function loop() {
+  var lastTs = 0;
+
+  function loop(ts) {
     raf = null;
-    clock += 0.0062;
+    if (!lastTs) lastTs = ts;
+    var dt = ts - lastTs;
+    lastTs = ts;
+    if (dt > 120) dt = 120;
+    clock += dt * 0.00011;
     draw(false);
     if (running) raf = requestAnimationFrame(loop);
   }
@@ -174,6 +181,7 @@
   function start() {
     if (reduce || raf) return;
     running = true;
+    lastTs = 0;
     raf = requestAnimationFrame(loop);
   }
 
