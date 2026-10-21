@@ -20,10 +20,10 @@
   var raf = null;
   var running = true;
 
-  var LEVELS = 6;
+  var LEVELS = 5;
   var STEP = 0.075;
   var BASE = 0.24;
-  var NOISE_SCALE = 1 / 260;
+  var NOISE_SCALE = 1 / 220;
 
   function hash(x, y, z) {
     var n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
@@ -47,7 +47,7 @@
 
   function fbm(x, y, z) {
     var v = 0, amp = 0.58, freq = 1;
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 2; i++) {
       v += noise2(x * freq, y * freq, z + i * 13.7) * amp;
       freq *= 2.05;
       amp *= 0.5;
@@ -64,7 +64,7 @@
     canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    cell = W < 760 ? 36 : 26;
+    cell = W < 760 ? 26 : 16;
     cols = Math.ceil(W / cell) + 2;
     rows = Math.ceil(H / cell) + 2;
     field = new Float32Array(cols * rows);
@@ -90,9 +90,9 @@
       var yPart = j * cell * NOISE_SCALE;
       for (var i = 0; i < cols; i++) {
         field[j * cols + i] = fbm(
-          i * cell * sc + t * 0.08,
-          yPart * 1.0 + t * 0.045,
-          0
+          i * cell * sc + t * 0.12,
+          yPart * 1.0 + t * 0.06,
+          t * 0.5
         );
       }
     }
@@ -174,7 +174,7 @@
     var dt = ts - lastTs;
     lastTs = ts;
     if (dt > 60) dt = 60;
-    clock += dt * 0.000018;
+    clock += dt * 0.00005;
     draw(false);
     if (running) raf = requestAnimationFrame(loop);
   }

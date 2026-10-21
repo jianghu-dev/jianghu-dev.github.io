@@ -164,7 +164,10 @@
   }
 
   var bootSeen = false;
-  try { bootSeen = sessionStorage.getItem('boot-seen') === '1'; } catch (e) {}
+  try {
+    var _r = document.referrer || '';
+    bootSeen = !!_r && _r.indexOf(location.host) !== -1;
+  } catch (e) {}
 
   if (!boot || reduce || bootSeen) {
     bootDone = true;
