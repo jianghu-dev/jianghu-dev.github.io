@@ -71,7 +71,9 @@
   }
 
   /* ================= 卡片入场 ================= */
-  var panels = [].slice.call(document.querySelectorAll('.panel, .footer'));
+  var panels = [].slice.call(
+    document.querySelectorAll('.panel, .footer, .work-card, .contact-card')
+  );
 
   if (!('IntersectionObserver' in window) || reduce) {
     panels.forEach(function (p) { p.classList.add('in'); });
@@ -93,10 +95,20 @@
   }
 
   /* ================= 悬停扫描线 ================= */
-  Array.prototype.forEach.call(document.querySelectorAll('.shot, .updates li'), function (el) {
-    var s = document.createElement('i');
-    s.className = 'scan';
-    el.appendChild(s);
+  Array.prototype.forEach.call(
+    document.querySelectorAll('.shot, .updates li, .work-card, .contact-card'),
+    function (el) {
+      var s = document.createElement('i');
+      s.className = 'scan';
+      el.appendChild(s);
+    }
+  );
+
+  /* 作品缩略图的取景标记 */
+  Array.prototype.forEach.call(document.querySelectorAll('.work-thumb'), function (t) {
+    var a = document.createElement('span');
+    a.className = 'aim';
+    t.appendChild(a);
   });
 
   /* ================= 滚动进度 ================= */
@@ -343,31 +355,11 @@
   }
 
   /* ================= 导航高亮 ================= */
-  var links = [].slice.call(document.querySelectorAll('#tabs a'));
-  var targets = links.map(function (a) {
-    return { link: a, el: document.getElementById(a.getAttribute('href').slice(1)) };
-  }).filter(function (t) { return t.el; });
+  var here = location.pathname.split('/').pop();
+  if (!here || here.indexOf('.') === -1) here = 'index.html';
 
-  function setActive(link) {
-    links.forEach(function (a) { a.classList.toggle('active', a === link); });
-  }
-
-  if ('IntersectionObserver' in window && targets.length) {
-    var spy = new IntersectionObserver(function (entries) {
-      if (window.scrollY < 100) { setActive(links[0]); return; }
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        for (var i = 0; i < targets.length; i++) {
-          if (targets[i].el === entry.target) setActive(targets[i].link);
-        }
-      });
-    }, { rootMargin: '-40% 0px -55% 0px' });
-
-    targets.forEach(function (t) { spy.observe(t.el); });
-  }
-
-  links.forEach(function (a) {
-    a.addEventListener('click', function () { setActive(a); });
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs a'), function (a) {
+    a.classList.toggle('active', a.getAttribute('href') === here);
   });
 
 })();
