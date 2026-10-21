@@ -20,7 +20,7 @@
   --grid: rgba(255, 255, 255, .04);
   --hover: rgba(255, 255, 255, .05);
   --inv: #0a0a0a;
-  --tick-bg: #1f2937;
+  --tick-bg: #f9fafb;
   --tick-fg: #0a0a0a;
 
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "JetBrains Mono", monospace;
