@@ -23,7 +23,7 @@
   var LEVELS = 6;
   var STEP = 0.075;
   var BASE = 0.24;
-  var NOISE_SCALE = 1 / 240;
+  var NOISE_SCALE = 1 / 260;
 
   function hash(x, y, z) {
     var n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
@@ -64,7 +64,7 @@
     canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    cell = W < 760 ? 34 : 22;
+    cell = W < 760 ? 36 : 26;
     cols = Math.ceil(W / cell) + 2;
     rows = Math.ceil(H / cell) + 2;
     field = new Float32Array(cols * rows);
@@ -85,13 +85,14 @@
     ctx.clearRect(0, 0, W, H);
 
     var t = clock;
+    var sc = NOISE_SCALE * (1 + 0.05 * Math.sin(t * 0.35));
     for (var j = 0; j < rows; j++) {
       var yPart = j * cell * NOISE_SCALE;
       for (var i = 0; i < cols; i++) {
         field[j * cols + i] = fbm(
-          i * cell * NOISE_SCALE + t * 0.09,
-          yPart + t * 0.02,
-          t * 0.02
+          i * cell * sc + t * 0.08,
+          yPart * 1.0 + t * 0.045,
+          0
         );
       }
     }
@@ -172,7 +173,7 @@
     if (!lastTs) lastTs = ts;
     var dt = ts - lastTs;
     lastTs = ts;
-    if (dt > 120) dt = 120;
+    if (dt > 60) dt = 60;
     clock += dt * 0.000018;
     draw(false);
     if (running) raf = requestAnimationFrame(loop);
