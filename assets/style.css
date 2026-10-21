@@ -1568,3 +1568,28 @@ html.boot-off .contact-card {
 }
 .work-card:hover .work-thumb.has-img::after { opacity: .45; }
 .work-thumb .badge { z-index: 2; }
+
+/* GALLERY 格子：反转截图背景 */
+.shot.has-img::before { display: none; }
+.shot-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: invert(1) brightness(.8) contrast(1.06);
+  opacity: .9;
+  transition: filter .3s var(--ease), opacity .3s var(--ease);
+  z-index: 0;
+}
+.shot:hover .shot-img { filter: invert(1) brightness(.95) contrast(1.06); opacity: 1; }
+.shot.has-img > span { position: relative; z-index: 1; }
+.shot.has-img:hover::before { filter: invert(1) brightness(.95) contrast(1.06); }
+.shot.has-img::after { display: none; }
+.shot.has-img .shot-idx,
+.shot.has-img .shot-name,
+.shot.has-img .shot-meta,
+.shot.has-img .shot-go {
+  text-shadow: 0 1px 6px rgba(0, 0, 0, .9), 0 0 2px rgba(0, 0, 0, .9);
+}
