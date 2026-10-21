@@ -11,9 +11,36 @@
 <meta property="og:description" content="记录日常、作品和正在做的事。" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230A0A0A'/%3E%3Ctext x='50' y='71' font-size='52' font-family='monospace' font-weight='700' fill='%23F8F9FA' text-anchor='middle'%3EJH%3C/text%3E%3C/svg%3E" />
 <link rel="stylesheet" href="assets/style.css" />
+<script>
+document.documentElement.classList.add('js');
+/* 兜底：如果 main.js 没能执行（比如改坏了一个标签），3 秒后自动撤掉遮罩并显示内容 */
+setTimeout(function () {
+  if (!window.__bootOK) {
+    var b = document.getElementById('boot');
+    if (b && b.parentNode) b.parentNode.removeChild(b);
+  }
+  if (!window.__revealOK) {
+    var els = document.querySelectorAll('.panel, .footer');
+    for (var i = 0; i < els.length; i++) els[i].classList.add('in');
+  }
+}, 3000);
+</script>
 </head>
 <body>
 
+<!-- 启动遮罩：打字结束后按回车才会进入 -->
+<div class="boot" id="boot" aria-hidden="true">
+  <div class="boot-bar">
+    <span class="boot-dots"><i></i><i></i><i></i></span>
+    <span class="boot-title">root@jianghu: ~ / survey</span>
+    <span class="boot-mode">PROTOCOL v3.5</span>
+  </div>
+  <pre class="boot-log" id="bootLog"></pre>
+  <div class="boot-input"><span class="boot-ps">root@jianghu:~$</span><span class="boot-caret"></span></div>
+</div>
+<noscript><style>.boot{display:none!important}</style></noscript>
+
+<div class="scroll-bar" id="scrollBar" aria-hidden="true"></div>
 <div class="bg-grid" aria-hidden="true"></div>
 
 <!-- ================= 顶栏 ================= -->
@@ -125,7 +152,7 @@
 
     <section class="panel quote">
       <!-- ✏️【改这里】一句你自己的话 -->
-      <p class="quote-text">把每个小工具真正做出来，才算真的想过一遍。</p>
+      <p class="quote-text" data-split>把每个小工具真正做出来，才算真的想过一遍。</p>
       <div class="quote-foot">
         <span class="mono">2026.10.21</span>
         <span class="mono dim">/ NOTE-001</span>

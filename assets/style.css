@@ -735,3 +735,250 @@ ul, dl, dd { margin: 0; padding: 0; list-style: none; }
   outline: 1.5px solid var(--ink);
   outline-offset: 2px;
 }
+
+/* ============================================================
+   动画层
+   ============================================================ */
+
+/* ---------- 滚动进度 ---------- */
+.scroll-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: var(--ink);
+  z-index: 60;
+  pointer-events: none;
+}
+
+/* ---------- 启动遮罩 ---------- */
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+  color: #f8f9fa;
+  font-family: var(--mono);
+  transition: opacity .5s var(--ease), transform .5s var(--ease);
+}
+.boot.is-out {
+  opacity: 0;
+  transform: translateY(-12px);
+  pointer-events: none;
+}
+
+.boot-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  background: #141414;
+  border-bottom: 1px solid #262626;
+  font-size: 10px;
+  letter-spacing: .14em;
+  color: #8b929c;
+}
+.boot-dots { display: flex; gap: 5px; }
+.boot-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3a3a3a;
+}
+.boot-dots i:first-child { background: #f8f9fa; }
+.boot-title { color: #d1d5db; letter-spacing: .08em; }
+.boot-mode { margin-left: auto; font-size: 9px; }
+
+.boot-log {
+  flex: 1;
+  margin: 0;
+  padding: 20px 16px;
+  font-size: 12px;
+  line-height: 2.05;
+  letter-spacing: .02em;
+  color: #6b7280;
+  white-space: pre-wrap;
+  overflow: hidden;
+}
+.boot-log b {
+  color: #f8f9fa;
+  font-weight: 500;
+}
+.boot-log .ln {
+  display: block;
+  opacity: 0;
+  animation: lineIn .22s ease forwards;
+}
+@keyframes lineIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.boot-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 12px;
+  font-size: 12px;
+  color: #9ca3af;
+  opacity: 0;
+  animation: lineIn .3s ease .1s forwards;
+}
+.boot-ps { color: #f8f9fa; }
+.boot-caret {
+  width: 7px;
+  height: 13px;
+  background: #f8f9fa;
+  animation: caret 1.05s steps(1) infinite;
+}
+@keyframes caret { 50% { opacity: 0; } }
+
+/* 等待回车 */
+.boot-ready {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 28px;
+  font-size: 11.5px;
+  letter-spacing: .1em;
+  color: #f8f9fa;
+  opacity: 0;
+  animation: readyIn .45s var(--ease) forwards;
+}
+.boot-ready .k {
+  padding: 2px 9px;
+  border: 1px solid #3a3a3a;
+  border-radius: 3px;
+  background: #1a1a1a;
+  font-size: 10px;
+  letter-spacing: .14em;
+  animation: keyPulse 1.7s ease-in-out infinite;
+}
+@keyframes readyIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes keyPulse {
+  0%, 100% { border-color: #3a3a3a; color: #d1d5db; }
+  50%      { border-color: #f8f9fa; color: #ffffff; }
+}
+
+/* ---------- 磁吸光标 ---------- */
+.cursor-frame {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--w, 28px);
+  height: var(--h, 28px);
+  margin-left: calc(var(--w, 28px) / -2);
+  margin-top: calc(var(--h, 28px) / -2);
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0;
+  display: none;
+  transition: width .2s var(--ease), height .2s var(--ease), opacity .25s var(--ease);
+  will-change: transform, width, height;
+}
+html.has-cursor .cursor-frame { display: block; }
+html.has-cursor.cursor-in .cursor-frame { opacity: 1; }
+
+.cursor-frame i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 0 solid var(--ink);
+  transition: border-color .2s var(--ease);
+}
+.cursor-frame .tl { top: 0; left: 0; border-top-width: 1.6px; border-left-width: 1.6px; }
+.cursor-frame .tr { top: 0; right: 0; border-top-width: 1.6px; border-right-width: 1.6px; }
+.cursor-frame .bl { bottom: 0; left: 0; border-bottom-width: 1.6px; border-left-width: 1.6px; }
+.cursor-frame .br { bottom: 0; right: 0; border-bottom-width: 1.6px; border-right-width: 1.6px; }
+
+.cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 9%, transparent);
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  display: none;
+  transition: opacity .25s var(--ease);
+  will-change: transform;
+}
+html.has-cursor .cursor-dot { display: block; }
+html.has-cursor.cursor-in .cursor-dot { opacity: 1; }
+
+/* ---------- 卡片入场 ---------- */
+html.js .panel,
+html.js .footer {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity .7s var(--ease), transform .7s var(--ease);
+}
+html.js .panel.in,
+html.js .footer.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- 逐字浮现 ---------- */
+[data-split] span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(9px);
+  will-change: opacity, transform;
+}
+[data-split].play span {
+  animation: charIn .52s var(--ease) forwards;
+}
+@keyframes charIn {
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- 悬停扫描线 ---------- */
+.updates li { position: relative; }
+.scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1.5px;
+  background: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.shot:hover .scan,
+.updates li:hover .scan {
+  animation: scanMove 1.05s var(--ease);
+}
+@keyframes scanMove {
+  0%   { top: 0; opacity: 0; }
+  8%   { opacity: .6; }
+  85%  { opacity: .45; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* ---------- 动效降级 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .boot { display: none; }
+  .scroll-bar { display: none; }
+  html.js .panel,
+  html.js .footer { opacity: 1; transform: none; transition: none; }
+  [data-split] span { opacity: 1; transform: none; animation: none; }
+  .scan { display: none; }
+  .cursor-frame,
+  .cursor-dot { display: none !important; }
+}
+
