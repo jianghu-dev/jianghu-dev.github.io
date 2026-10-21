@@ -12,7 +12,9 @@
 ├── contact.html        联系（大邮箱 + 四个入口）
 ├── assets/
 │   ├── style.css       五个页面共用一套样式
-│   └── main.js         五个页面共用一套交互
+│   ├── main.js         五个页面共用一套交互
+│   ├── avatar.jpg      头像（默认灰度，悬停显色）
+│   └── banner.webp     顶部氛围图
 ├── .nojekyll           让 GitHub 跳过 Jekyll 处理
 └── README.md           本文件（不影响访问，可删）
 ```
@@ -165,19 +167,20 @@ gh auth login --hostname github.com --git-protocol https --web
 
 ## 5. 改样式
 
-全在 `assets/style.css` 顶部的 `:root` 里，五个页面同时生效。
+全在 `assets/style.css` 顶部的 `:root` 里，五个页面同时生效。**整站固定深色，没有浅色模式。**
 
 | 变量        | 作用     | 默认值                     |
 | --------- | ------ | ----------------------- |
-| `--bg`    | 页面底色   | `#f8f9fa`               |
-| `--ink`   | 主墨色    | `#0a0a0a`               |
-| `--panel` | 卡片底色   | `rgba(255,255,255,.88)` |
+| `--bg`    | 页面底色   | `#0a0a0a`               |
+| `--ink`   | 主墨色（文字、实心块） | `#f9fafb`               |
+| `--panel` | 卡片底色   | `rgba(22,22,22,.88)`    |
 | `--max`   | 内容最大宽度 | `1240px`                |
 | `--gap`   | 卡片间距   | `14px`                  |
 
 **三栏宽度**在 `.layout` 的 `grid-template-columns`；**作品网格**在 `.work-grid`。  
-**深色模式**是同一组变量在 `:root[data-theme="dark"]` 下的覆盖值。  
-**网格底纹**密度在 `.bg-grid` 的 `background-size`。
+**网格底纹**密度在 `.bg-grid` 的 `background-size`。  
+**顶部氛围图**在 `.banner`：换图就把 `assets/banner.webp` 替换掉，高度改 `height`，压暗程度改 `.banner img` 的 `brightness()`。  
+**头像**在 `.avatar` / `img.avatar`，默认灰度，鼠标悬停恢复彩色。
 
 ---
 
@@ -185,7 +188,7 @@ gh auth login --hostname github.com --git-protocol https --web
 
 | 位置   | 效果                                                       |
 | ---- | -------------------------------------------------------- |
-| 打开主页 | 终端日志逐行打印，显示 `[ENTER] 按回车进入站点`，**按回车（或点一下）才进入**。其他页面没有这一步 |
+| 第一次打开主页 | 终端日志逐行打印，显示 `[ENTER] 按回车进入站点`，**按回车（或点一下）才进入**。本次会话内再回主页不再播放；其他页面没有这一步 |
 | 鼠标   | 四角准星跟随，移到链接/按钮上会吸附并框住                                    |
 | 卡片   | 滚动到视口时依次淡入                                               |
 | 引言   | 逐字浮现，每字 0.045 秒                                          |
@@ -195,7 +198,7 @@ gh auth login --hostname github.com --git-protocol https --web
 **改启动日志**：`assets/main.js` 里的 `BOOT_LINES`，一行一个 `['标签', '内容']`。  
 **关掉全部动画**：系统设置 → 辅助功能 → 显示 → 打开「减弱动态效果」。
 
-**两道保护**：`main.js` 没跑起来时 3 秒后自动显示内容；浏览器禁 JS 时遮罩不出现。
+**三道保护**：`main.js` 没跑起来时 3 秒后自动显示内容；浏览器禁 JS 时遮罩不出现；已进过站就直接跳过遮罩和入场动画。
 
 ---
 

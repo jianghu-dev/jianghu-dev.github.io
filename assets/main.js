@@ -18,40 +18,6 @@
   tick();
   setInterval(tick, 1000);
 
-  /* ================= 黑白切换 ================= */
-  var themeBtn = document.getElementById('themeBtn');
-  var STORE = 'site-theme';
-
-  function systemDark() {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-  function isDark() {
-    var set = root.getAttribute('data-theme');
-    if (set === 'dark') return true;
-    if (set === 'light') return false;
-    return systemDark();
-  }
-  function applyTheme(theme) {
-    if (theme) root.setAttribute('data-theme', theme);
-    else root.removeAttribute('data-theme');
-    if (themeBtn) {
-      themeBtn.textContent = isDark() ? '◑' : '◐';
-      themeBtn.title = isDark() ? '切换到浅色' : '切换到深色';
-    }
-  }
-
-  var saved = null;
-  try { saved = localStorage.getItem(STORE); } catch (e) {}
-  applyTheme(saved);
-
-  if (themeBtn) {
-    themeBtn.addEventListener('click', function () {
-      var next = isDark() ? 'light' : 'dark';
-      applyTheme(next);
-      try { localStorage.setItem(STORE, next); } catch (e) {}
-    });
-  }
-
   /* ================= 逐字浮现 ================= */
   var splitEls = [].slice.call(document.querySelectorAll('[data-split]'));
 
@@ -151,6 +117,7 @@
   function finishBoot(fast) {
     if (bootDone) return;
     bootDone = true;
+    try { sessionStorage.setItem('boot-seen', '1'); } catch (e) {}
     if (boot) {
       boot.classList.add('is-out');
       setTimeout(function () {
@@ -196,7 +163,10 @@
     finishBoot(false);
   }
 
-  if (!boot || reduce) {
+  var bootSeen = false;
+  try { bootSeen = sessionStorage.getItem('boot-seen') === '1'; } catch (e) {}
+
+  if (!boot || reduce || bootSeen) {
     bootDone = true;
     window.__bootOK = true;
     if (boot && boot.parentNode) boot.parentNode.removeChild(boot);

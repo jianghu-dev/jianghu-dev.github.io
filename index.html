@@ -13,6 +13,12 @@
 <link rel="stylesheet" href="assets/style.css" />
 <script>
 document.documentElement.classList.add('js');
+/* 本次会话已经进过站：直接跳过启动遮罩，避免回主页时又弹一次 */
+try {
+  if (sessionStorage.getItem('boot-seen') === '1') {
+    document.documentElement.classList.add('boot-off');
+  }
+} catch (e) {}
 /* 兜底：如果 main.js 没能执行（比如改坏了一个标签），3 秒后自动撤掉遮罩并显示内容 */
 setTimeout(function () {
   if (!window.__bootOK) {
@@ -68,9 +74,16 @@ setTimeout(function () {
       <a href="contact.html">联系</a>
     </nav>
 
-    <button class="theme-btn" id="themeBtn" type="button" aria-label="切换黑白">◐</button>
   </div>
 </header>
+
+<section class="banner">
+  <img src="assets/banner.webp" alt="" aria-hidden="true" />
+  <div class="banner-inner">
+      <p class="banner-slogan">慢一点没关系，别停就行。</p>
+    <span class="banner-tag">SURVEY · 2026</span>
+  </div>
+</section>
 
 <!-- ================= 主体三栏 ================= -->
 <main class="layout">

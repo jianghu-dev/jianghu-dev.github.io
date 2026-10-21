@@ -5,33 +5,8 @@
 
 /* ---------- tokens ---------- */
 :root {
-  --bg: #f8f9fa;
-  --panel: rgba(255, 255, 255, .88);
-  --panel-solid: #ffffff;
-  --ink: #0a0a0a;
-  --ink-1: #111827;
-  --ink-2: #374151;
-  --ink-3: #6b7280;
-  --ink-4: #9ca3af;
-  --line: rgba(0, 0, 0, .08);
-  --line-soft: rgba(0, 0, 0, .05);
-  --grid: rgba(0, 0, 0, .035);
-  --hover: rgba(0, 0, 0, .035);
-  --inv: #ffffff;
-  --tick-bg: #0a0a0a;
-  --tick-fg: #ffffff;
+  color-scheme: dark;
 
-  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "JetBrains Mono", monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-
-  --r: 10px;
-  --gap: 14px;
-  --max: 1240px;
-  --shadow: 0 4px 20px -2px rgba(0, 0, 0, .04), 0 1px 3px rgba(0, 0, 0, .02);
-  --ease: cubic-bezier(.22, .61, .36, 1);
-}
-
-:root[data-theme="dark"] {
   --bg: #0a0a0a;
   --panel: rgba(22, 22, 22, .88);
   --panel-solid: #161616;
@@ -47,7 +22,15 @@
   --inv: #0a0a0a;
   --tick-bg: #1f2937;
   --tick-fg: #f9fafb;
+
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "JetBrains Mono", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+
+  --r: 10px;
+  --gap: 14px;
+  --max: 1240px;
   --shadow: 0 4px 24px -2px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
+  --ease: cubic-bezier(.22, .61, .36, 1);
 }
 
 /* ---------- base ---------- */
@@ -182,20 +165,63 @@ ul, dl, dd { margin: 0; padding: 0; list-style: none; }
 }
 .tabs a:hover { background: var(--hover); color: var(--ink); }
 .tabs a.active { background: var(--ink); color: var(--inv); }
+.tabs a:last-child { padding-right: 26px; }
 
-.theme-btn {
-  flex: none;
-  width: 48px;
-  border: 0;
-  border-left: 1px solid var(--line-soft);
-  background: transparent;
-  color: var(--ink-3);
-  font-family: var(--mono);
-  font-size: 15px;
-  cursor: pointer;
-  transition: background .16s var(--ease), color .16s var(--ease);
+/* ---------- 顶部氛围图 ---------- */
+.banner {
+  position: relative;
+  height: clamp(148px, 15vw, 190px);
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  z-index: 1;
 }
-.theme-btn:hover { background: var(--hover); color: var(--ink); }
+.banner img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  filter: grayscale(.45) brightness(.58) contrast(1.15);
+}
+.banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 10, .9) 0%,
+    rgba(10, 10, 10, .42) 46%,
+    rgba(10, 10, 10, .78) 80%,
+    var(--bg) 100%
+  );
+}
+.banner-inner {
+  position: relative;
+  z-index: 2;
+  width: min(100% - 28px, var(--max));
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 15px;
+}
+.banner-slogan {
+  font-size: clamp(16px, 2.1vw, 23px);
+  letter-spacing: -.02em;
+  color: var(--ink);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, .85);
+}
+.banner-tag {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .16em;
+  color: var(--ink-3);
+  white-space: nowrap;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, .9);
+}
 
 /* ---------- 三栏布局 ---------- */
 .layout {
@@ -609,7 +635,10 @@ img.avatar {
   width: 96px;
   height: 96px;
   display: block;
+  filter: grayscale(1) contrast(1.06) brightness(.88);
+  transition: filter .45s var(--ease);
 }
+img.avatar:hover { filter: grayscale(0) brightness(1); }
 
 .link-grid-single { grid-template-columns: 1fr; }
 
@@ -1036,7 +1065,6 @@ img.avatar {
   .brand-text .en { display: none; }
   .brand { padding: 0 13px 0 0; }
   .tabs a { padding: 0 13px; font-size: 12px; }
-  .theme-btn { width: 42px; }
   .topbar { height: 52px; }
   .footer { width: min(100% - 20px, var(--max)); }
 }
@@ -1046,7 +1074,6 @@ img.avatar {
   .brand { padding: 0 10px 0 0; gap: 7px; }
   .brand-mark { width: 3px; height: 20px; }
   .brand-text strong { font-size: 13px; }
-  .theme-btn { width: 38px; font-size: 13px; }
   .updates li { grid-template-columns: 54px 40px minmax(0, 1fr); gap: 8px; padding: 11px; }
   .shot { min-height: 140px; padding: 12px; }
   .quote { padding: 20px 16px 14px; }
@@ -1100,6 +1127,7 @@ img.avatar {
   transform: translateY(-12px);
   pointer-events: none;
 }
+html.boot-off .boot { display: none; }
 
 .boot-bar {
   display: flex;
@@ -1270,6 +1298,16 @@ html.js .contact-card {
 }
 html.js .work-card.in,
 html.js .contact-card.in { opacity: 1; }
+
+/* 本次会话已进过站：回主页不再做入场动画，直接呈现 */
+html.boot-off .panel,
+html.boot-off .footer,
+html.boot-off .work-card,
+html.boot-off .contact-card {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
 
 /* ---------- 逐字浮现 ---------- */
 [data-split] span {
