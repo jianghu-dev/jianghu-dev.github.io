@@ -126,6 +126,11 @@ setTimeout(function () {
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/></svg>
           <span>aichicucumber@gmail.com</span>
         </a>
+        <a href="#" class="qq-entry" id="qqEntry">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.6 9.6 0 0 1-3.5-.6L3 21l1.6-4.6A8.3 8.3 0 0 1 3.4 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8.6 8.4Z"/></svg>
+          <span>QQ</span>
+          <i class="lock-tag">LOCKED</i>
+        </a>
       </div>
     </section>
 
@@ -138,7 +143,7 @@ setTimeout(function () {
 
     <section class="panel quote">
       <!-- ✏️【改这里】一句你自己的话 -->
-      <p class="quote-text" data-split>学理科的办法很笨：每个公式自己推一遍，每道错题写清楚错在哪。看着慢，但比刷题管用。</p>
+      <p class="quote-text" data-split>本质从现象内化而来，行为从现象外化而来。</p>
       <div class="quote-foot">
         <span class="mono">2026.10.21</span>
         <span class="mono dim">/ NOTE-001</span>
@@ -275,6 +280,20 @@ setTimeout(function () {
     <a href="contact.html" class="mono dim">联系我 →</a>
   </div>
 </footer>
+
+
+<div class="lock" id="qqLock" hidden>
+  <div class="lock-box" role="dialog" aria-modal="true" aria-labelledby="qqQ">
+    <div class="lock-head"><span>ACCESS CONTROL</span><span>QC-01</span></div>
+    <p class="lock-q" id="qqQ">小明的炮友叫什么？</p>
+    <form class="lock-form" id="qqForm" autocomplete="off">
+      <input type="text" id="qqInput" placeholder="输入答案" aria-label="答案" />
+      <button type="submit">解锁</button>
+    </form>
+    <p class="lock-msg" id="qqMsg"></p>
+    <button class="lock-close" id="qqClose" type="button">关闭</button>
+  </div>
+</div>
 
 <script src="assets/contours.js"></script>
 <script src="assets/main.js"></script>

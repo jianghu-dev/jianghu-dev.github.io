@@ -332,4 +332,87 @@
     a.classList.toggle('active', a.getAttribute('href') === here);
   });
 
+  /* ================= QQ 解锁 ================= */
+  var qqEntry = document.getElementById('qqEntry');
+  var qqLock = document.getElementById('qqLock');
+
+  if (qqEntry && qqLock) {
+    /* 只存哈希，源码里没有明文：'透明人' → 91e17de */
+    var ANSWER_HASH = '91e17de';
+    var QQ_UIN = '';
+
+    var qqForm = document.getElementById('qqForm');
+    var qqInput = document.getElementById('qqInput');
+    var qqMsg = document.getElementById('qqMsg');
+    var qqClose = document.getElementById('qqClose');
+
+    function hashAnswer(str) {
+      var h = 5381;
+      for (var i = 0; i < str.length; i++) {
+        h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
+      }
+      return h.toString(16);
+    }
+
+    function alreadyOpen() {
+      try { return sessionStorage.getItem('qq-open') === '1'; } catch (e) { return false; }
+    }
+
+    function openLock() {
+      qqLock.hidden = false;
+      document.body.style.overflow = 'hidden';
+      setTimeout(function () { if (qqInput) qqInput.focus(); }, 60);
+    }
+
+    function closeLock() {
+      qqLock.hidden = true;
+      document.body.style.overflow = '';
+    }
+
+    function unlockSuccess() {
+      var box = qqLock.querySelector('.lock-box');
+      box.innerHTML =
+        '<div class="lock-head"><span>ACCESS GRANTED</span><span>QC-01</span></div>' +
+        '<p class="lock-q">解锁成功。</p>' +
+        '<p class="lock-result"><span>QQ</span>' + (QQ_UIN || '待填写') + '</p>' +
+        '<button class="lock-close" id="qqClose2" type="button">关闭</button>';
+      box.querySelector('#qqClose2').addEventListener('click', closeLock);
+      try { sessionStorage.setItem('qq-open', '1'); } catch (e) {}
+    }
+
+    qqEntry.addEventListener('click', function (e) {
+      e.preventDefault();
+      openLock();
+      if (alreadyOpen()) unlockSuccess();
+    });
+
+    qqForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var val = qqInput.value.trim();
+      if (!val) {
+        qqMsg.textContent = '先输入答案';
+        qqMsg.className = 'lock-msg err';
+        return;
+      }
+      if (hashAnswer(val) === ANSWER_HASH) {
+        qqMsg.textContent = '';
+        unlockSuccess();
+      } else {
+        qqMsg.textContent = '答案不对，再想想';
+        qqMsg.className = 'lock-msg err';
+        qqLock.classList.add('shake');
+        setTimeout(function () { qqLock.classList.remove('shake'); }, 380);
+        qqInput.select();
+      }
+    });
+
+    qqClose.addEventListener('click', closeLock);
+    qqLock.addEventListener('click', function (e) {
+      if (e.target === qqLock) closeLock();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !qqLock.hidden) closeLock();
+    });
+  }
+
 })();
