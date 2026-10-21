@@ -56,6 +56,16 @@ body {
   transition: background .3s var(--ease), color .3s var(--ease);
 }
 
+/* 动态等高线画布 */
+.bg-contours {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+  opacity: .9;
+}
+
 /* 建筑网格背景 */
 .bg-grid {
   position: fixed;
