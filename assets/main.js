@@ -1,109 +1,87 @@
-/* 个人主页交互：主题切换 / 移动菜单 / 滚动高亮 / 渐入动画 */
+/* 个人站交互：时钟 / 黑白切换 / 导航高亮 */
 
 (function () {
   'use strict';
 
-  /* ---------- 主题 ---------- */
   var root = document.documentElement;
+
+  /* ---------- 时钟 ---------- */
+  var clock = document.getElementById('clock');
+
+  function tick() {
+    if (!clock) return;
+    var d = new Date();
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    clock.textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* ---------- 黑白切换 ---------- */
   var themeBtn = document.getElementById('themeBtn');
   var STORE = 'site-theme';
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
 
-  function systemDark() {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  function currentIsDark() {
+    var set = root.getAttribute('data-theme');
+    if (set === 'dark') return true;
+    if (set === 'light') return false;
+    return mq.matches;
   }
 
-  function apply(theme) {
-    if (theme === 'light' || theme === 'dark') {
+  function applyTheme(theme) {
+    if (theme) {
       root.setAttribute('data-theme', theme);
     } else {
       root.removeAttribute('data-theme');
     }
     if (themeBtn) {
-      var dark = theme === 'dark' || (theme !== 'light' && systemDark());
-      themeBtn.setAttribute('aria-label', dark ? '切换到浅色' : '切换到深色');
+      themeBtn.textContent = currentIsDark() ? '◑' : '◐';
+      themeBtn.title = currentIsDark() ? '切换到浅色' : '切换到深色';
     }
   }
 
   var saved = null;
   try { saved = localStorage.getItem(STORE); } catch (e) {}
-  apply(saved);
+  applyTheme(saved);
 
   if (themeBtn) {
     themeBtn.addEventListener('click', function () {
-      var dark = root.getAttribute('data-theme') === 'dark' ||
-        (!root.getAttribute('data-theme') && systemDark());
-      var next = dark ? 'light' : 'dark';
-      apply(next);
+      var next = currentIsDark() ? 'light' : 'dark';
+      applyTheme(next);
       try { localStorage.setItem(STORE, next); } catch (e) {}
     });
   }
 
-  /* ---------- 导航：吸顶阴影 ---------- */
-  var nav = document.getElementById('nav');
-  function onScroll() {
-    if (!nav) return;
-    nav.classList.toggle('is-stuck', window.scrollY > 8);
-  }
-  onScroll();
-  window.addEventListener('scroll', onScroll, { passive: true });
-
-  /* ---------- 移动菜单 ---------- */
-  var menuBtn = document.getElementById('menuBtn');
-  var navLinks = document.getElementById('navLinks');
-
-  if (menuBtn && navLinks) {
-    menuBtn.addEventListener('click', function () {
-      var open = navLinks.classList.toggle('open');
-      menuBtn.setAttribute('aria-expanded', String(open));
-    });
-    navLinks.addEventListener('click', function (e) {
-      if (e.target.tagName === 'A') {
-        navLinks.classList.remove('open');
-        menuBtn.setAttribute('aria-expanded', 'false');
-      }
-    });
-  }
-
-  /* ---------- 渐入 ---------- */
-  var items = [].slice.call(document.querySelectorAll('.reveal'));
-
-  if (!('IntersectionObserver' in window)) {
-    items.forEach(function (el) { el.classList.add('in'); });
-  } else {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in');
-          io.unobserve(entry.target);
-        }
-      });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
-
-    items.forEach(function (el, i) {
-      el.style.transitionDelay = (Math.min(i, 4) * 70) + 'ms';
-      io.observe(el);
-    });
-  }
-
   /* ---------- 导航高亮 ---------- */
-  var sections = [].slice.call(document.querySelectorAll('section[id]'));
-  var links = [].slice.call(document.querySelectorAll('.nav-links a'));
+  var links = [].slice.call(document.querySelectorAll('#tabs a'));
+  var targets = links
+    .map(function (a) {
+      var id = a.getAttribute('href').slice(1);
+      return { link: a, el: document.getElementById(id) };
+    })
+    .filter(function (t) { return t.el; });
 
-  if (sections.length && links.length && 'IntersectionObserver' in window) {
+  function setActive(link) {
+    links.forEach(function (a) { a.classList.toggle('active', a === link); });
+  }
+
+  if ('IntersectionObserver' in window && targets.length) {
     var spy = new IntersectionObserver(function (entries) {
+      if (window.scrollY < 100) { setActive(links[0]); return; }
       entries.forEach(function (entry) {
         if (!entry.isIntersecting) return;
-        var id = entry.target.id;
-        links.forEach(function (a) {
-          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
-        });
+        for (var i = 0; i < targets.length; i++) {
+          if (targets[i].el === entry.target) setActive(targets[i].link);
+        }
       });
-    }, { rootMargin: '-45% 0px -50% 0px' });
+    }, { rootMargin: '-40% 0px -55% 0px' });
 
-    sections.forEach(function (s) { spy.observe(s); });
+    targets.forEach(function (t) { spy.observe(t.el); });
   }
 
-  /* ---------- 年份 ---------- */
-  var year = document.getElementById('year');
-  if (year) year.textContent = new Date().getFullYear();
+  links.forEach(function (a) {
+    a.addEventListener('click', function () { setActive(a); });
+  });
+
 })();

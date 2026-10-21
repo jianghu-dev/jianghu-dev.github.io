@@ -3,226 +3,261 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<!-- ✏️【改这里】浏览器标签页上显示的标题：格式为 名字 · 职位 -->
-<title>陈亦然 · 产品设计师</title>
-<!-- ✏️【改这里】搜索引擎和分享时显示的简介 -->
-<meta name="description" content="陈亦然，产品设计师。专注 B 端产品体验与设计系统建设，现居杭州。" />
-<meta name="author" content="陈亦然" />
-<meta property="og:title" content="陈亦然 · 产品设计师" />
-<meta property="og:description" content="专注 B 端产品体验与设计系统建设。" />
-<meta property="og:type" content="website" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%2314614f'/%3E%3Ctext x='50' y='70' font-size='56' font-family='system-ui,sans-serif' font-weight='600' fill='%23ffffff' text-anchor='middle'%3E陈%3C/text%3E%3C/svg%3E" />
+<!-- ✏️【改这里】浏览器标签页标题 -->
+<title>江虎 · JIANG HU / 个人站</title>
+<!-- ✏️【改这里】分享和搜索时显示的简介 -->
+<meta name="description" content="江虎的个人站点。记录日常、作品和正在做的事。" />
+<meta property="og:title" content="江虎 · JIANG HU" />
+<meta property="og:description" content="记录日常、作品和正在做的事。" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230A0A0A'/%3E%3Ctext x='50' y='71' font-size='52' font-family='monospace' font-weight='700' fill='%23F8F9FA' text-anchor='middle'%3EJH%3C/text%3E%3C/svg%3E" />
 <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
 
-<a class="skip" href="#main">跳到主要内容</a>
+<div class="bg-grid" aria-hidden="true"></div>
 
-<header class="nav" id="nav">
-  <div class="wrap nav-inner">
+<!-- ================= 顶栏 ================= -->
+<header class="topbar" id="top">
+  <div class="topbar-inner">
     <a class="brand" href="#top">
-      <span class="brand-dot"></span>
-      <span>陈亦然</span>
+      <span class="brand-mark"></span>
+      <span class="brand-text">
+        <strong>江虎<span class="en"> · JIANG HU</span></strong>
+        <small>SITE NO.001 / <span id="clock">--:--:--</span> CST</small>
+      </span>
     </a>
 
-    <nav class="nav-links" id="navLinks" aria-label="主导航">
+    <div class="topbar-stat" aria-hidden="true">
+      <span><i class="live"></i>ONLINE</span>
+      <span>PAGE 01/01</span>
+      <span>BUILD 261021</span>
+    </div>
+
+    <nav class="tabs" id="tabs" aria-label="主导航">
+      <a href="#top" class="active">主页</a>
       <a href="#about">关于</a>
-      <a href="#work">作品</a>
+      <a href="#gallery">作品</a>
+      <a href="#updates">动态</a>
       <a href="#contact">联系</a>
     </nav>
 
-    <div class="nav-actions">
-      <button class="icon-btn" id="themeBtn" type="button" aria-label="切换深浅色" title="切换深浅色">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-          <circle cx="12" cy="12" r="4.2"></circle>
-          <path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"></path>
-        </svg>
-      </button>
-      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="菜单" aria-expanded="false">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-          <path d="M4 7h16M4 12h16M4 17h16"></path>
-        </svg>
-      </button>
-    </div>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="切换黑白">◐</button>
   </div>
 </header>
 
-<main id="main">
+<!-- ================= 主体三栏 ================= -->
+<main class="layout">
 
-  <!-- ============ HERO ============ -->
-  <!-- ✏️【第一块：首屏】改下面 4 处：左上角的职位、大标题、两行介绍、右边的名片 -->
-  <section class="hero" id="top">
-    <div class="wrap hero-grid">
-      <div class="hero-text">
-        <p class="eyebrow">产品设计师 · Hangzhou</p>
-        <h1>把复杂的流程<br /><em>拆成能用的界面</em>。</h1>
-        <p class="hero-desc">
-          六年 B 端设计经验，做过支付中台、审批流和数据看板。
-          相信好设计不是让东西变好看，而是让人少点一次鼠标。
+  <!-- ---------- 左栏 ---------- -->
+  <aside class="col-left">
+
+    <section class="panel" id="about">
+      <div class="panel-head"><span>PROFILE</span><span class="zh">个人信息</span><span class="idx"></span></div>
+
+      <div class="profile-body">
+        <div class="avatar" aria-hidden="true"><span>JH</span></div>
+
+        <!-- ✏️【改这里】名字、英文名、职位 -->
+        <h1 class="name">江虎</h1>
+        <p class="name-en">JIANG HU</p>
+        <p class="role">独立开发者 / 前端</p>
+
+        <!-- ✏️【改这里】两三行自我介绍 -->
+        <p class="bio">
+          这里记录日常与正在做的事。写代码，做一些小工具，
+          偶尔拍照片。既是个人站点，也是我的工作台。
         </p>
-        <div class="hero-cta">
-          <a class="btn btn-primary" href="#work">
-            看作品
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-          <a class="btn" href="mailto:hi@example.com">聊聊合作</a>
-        </div>
       </div>
 
-      <aside class="id-card" aria-label="名片">
-        <!-- ✏️【改这里】名片：头像里的字、姓名、英文名、坐标、方向、状态、三个链接 -->
-        <div class="id-top">
-          <!-- 想换成照片：把下面这行 <div class="avatar"> 换成 <img class="avatar" src="assets/avatar.jpg" alt="你的名字" /> -->
-          <div class="avatar" aria-hidden="true">陈</div>
-          <div>
-            <div class="id-name">陈亦然</div>
-            <div class="id-en">CHEN YIRAN</div>
-          </div>
-        </div>
-        <dl class="id-list">
-          <div><dt>坐标</dt><dd>杭州 · 中国</dd></div>
-          <div><dt>方向</dt><dd>B 端产品 / 设计系统</dd></div>
-          <div><dt>状态</dt><dd><span class="dot-live"></span>开放远程合作</dd></div>
-        </dl>
-        <div class="id-links">
-          <a href="https://github.com/aichicucumber-afk" target="_blank" rel="noopener">GitHub</a>
-          <a href="mailto:hi@example.com">Email</a>
-        </div>
-      </aside>
-    </div>
-  </section>
+      <!-- ✏️【改这里】状态条文字，跑马灯效果 -->
+      <div class="ticker"><div class="ticker-track">
+        <span>信号接收中 · RECEIVING · 当前在整理作品集 · 开放远程合作 ·</span>
+        <span aria-hidden="true">信号接收中 · RECEIVING · 当前在整理作品集 · 开放远程合作 ·</span>
+      </div></div>
+    </section>
 
-  <!-- ============ ABOUT ============ -->
-  <section class="section" id="about">
-    <div class="wrap">
-      <div class="sec-head">
-        <h2>关于</h2>
-        <span class="sec-num">01 / ABOUT</span>
-      </div>
-
-      <div class="about-grid">
-        <!-- ✏️【第二块：关于】改下面三段文字，写你自己的经历。可以只留两段，多的整段删掉 -->
-        <div class="reveal">
-          <p class="lead">
-            我在 2019 年从交互设计转进 B 端，第一个项目是把一套 14 年前的内部系统重做。
-            那半年教会我的事：用户不关心你的栅格，只关心少点几个按钮能不能把单子提交出去。
-          </p>
-          <p>
-            后来做支付中台，每天经手几十万笔交易的后台。界面上的每一次犹豫都会变成资金侧的差错，
-            所以我对状态、异常、权限这些东西有点偏执——宁可多画三个状态，也不让用户猜。
-          </p>
-          <p>
-            现在带着三个人的设计小组，主要在建一套跨产品线的设计系统。
-            业余时间写点前端，把设计稿自己实现一遍，能省掉很多来回。
-          </p>
-        </div>
-
-        <div class="about-side reveal">
-          <!-- ✏️【改这里】技能标签：每组 4 个，想加减就往 <ul class="chips"> 里面复制/删除一个 <li>文字</li> -->
-          <h3 class="side-title">能力</h3>
-          <div class="skill-group">
-            <span class="skill-label">设计</span>
-            <ul class="chips">
-              <li>交互设计</li><li>信息架构</li><li>设计系统</li><li>可用性测试</li>
-            </ul>
-          </div>
-          <div class="skill-group">
-            <span class="skill-label">工具</span>
-            <ul class="chips">
-              <li>Figma</li><li>Framer</li><li>After Effects</li><li>Blender</li>
-            </ul>
-          </div>
-          <div class="skill-group">
-            <span class="skill-label">技术</span>
-            <ul class="chips">
-              <li>HTML / CSS</li><li>TypeScript</li><li>React</li><li>SwiftUI</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ WORK ============ -->
-  <section class="section" id="work">
-    <div class="wrap">
-      <div class="sec-head">
-        <h2>作品</h2>
-        <span class="sec-num">02 / WORK</span>
-      </div>
-
-      <div class="works">
-
-        <!-- ✏️【第三块：作品】一共 3 张卡片，每张改 5 处：
-             1) 灰底方块里的两个字（缩略图占位）
-             2) work-meta 里的「分类」和「年份」
-             3) <h3> 里的项目名
-             4) <p> 里的一句成果
-             5) href="#" 换成项目链接（没有就把整张卡片删掉）
-             想加第 4 张卡：把一整段 <a class="work reveal"> … </a> 复制一份改内容 -->
-        <a class="work reveal" href="#" target="_blank" rel="noopener">
-          <div class="thumb thumb-a"><span>Arbor</span></div>
-          <div class="work-body">
-            <div class="work-meta"><span>设计系统</span><span>2024 — 至今</span></div>
-            <h3>Arbor 设计系统</h3>
-            <p>覆盖 4 条产品线的组件库，48 个组件，一套 token 走通设计与代码。</p>
-            <span class="work-link">查看项目 →</span>
-          </div>
+    <section class="panel">
+      <div class="panel-head"><span>LINKS</span><span class="zh">链接</span><span class="idx"></span></div>
+      <!-- ✏️【改这里】把 href 换成你自己的地址 -->
+      <div class="link-grid">
+        <a href="https://github.com/aichicucumber-afk" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.9 2.4 5.8 2.7 5.8 2.7a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.1c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
+          <span>GITHUB</span>
         </a>
-
-        <a class="work reveal" href="#" target="_blank" rel="noopener">
-          <div class="thumb thumb-b"><span>Pay</span></div>
-          <div class="work-body">
-            <div class="work-meta"><span>B 端后台</span><span>2023</span></div>
-            <h3>支付中台控制台重构</h3>
-            <p>把 9 个入口的结算配置收进一条向导，配置耗时从 22 分钟降到 6 分钟。</p>
-            <span class="work-link">查看项目 →</span>
-          </div>
+        <a href="mailto:hi@example.com">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/></svg>
+          <span>EMAIL</span>
         </a>
-
-        <a class="work reveal" href="#" target="_blank" rel="noopener">
-          <div class="thumb thumb-c"><span>巡检</span></div>
-          <div class="work-body">
-            <div class="work-meta"><span>移动端 · 0→1</span><span>2022</span></div>
-            <h3>设备巡检 App</h3>
-            <p>为零网络环境的厂区设计离线优先的巡检流程，日均完成 1.2 万条记录。</p>
-            <span class="work-link">查看项目 →</span>
-          </div>
+        <a href="https://github.com/aichicucumber-afk?tab=repositories" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H18a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5.5Z"/><path d="M8 4v16"/></svg>
+          <span>仓库</span>
         </a>
-
+        <a href="#contact">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg>
+          <span>联系</span>
+        </a>
       </div>
+    </section>
 
-      <p class="works-more">
-        更多项目在 <a href="https://github.com/aichicucumber-afk" target="_blank" rel="noopener">GitHub</a> 上，或直接来信索取完整作品集。
-      </p>
-    </div>
-  </section>
-
-  <!-- ============ CONTACT ============ -->
-  <section class="section section-contact" id="contact">
-    <div class="wrap">
-      <div class="sec-head">
-        <h2>联系</h2>
-        <span class="sec-num">03 / CONTACT</span>
+    <section class="panel">
+      <div class="panel-head"><span>TAGS</span><span class="zh">标签</span><span class="idx"></span></div>
+      <!-- ✏️【改这里】标签列表，删一个 span 就少一个 -->
+      <div class="tags">
+        <span>HTML</span><span>CSS</span><span>JavaScript</span><span>Canvas</span>
+        <span>Three.js</span><span>Figma</span><span>摄影</span><span>折腾</span>
       </div>
+    </section>
 
-      <div class="contact-inner reveal">
-        <!-- ✏️【第四块：联系】邮箱在整页出现 3 次（这里 1 次、上面名片 1 次、首屏按钮 1 次），
-             用编辑器的「查找替换」一次全改掉；也可以逐个改 mailto: 后面的地址 -->
-        <p class="contact-lead">有项目想做，或者只是想聊聊设计？</p>
-        <a class="contact-mail" href="mailto:hi@example.com">hi@example.com</a>
-        <p class="contact-note">通常 24 小时内回复。接受全职机会与远程咨询。</p>
+    <section class="panel">
+      <div class="panel-head"><span>SITE</span><span class="zh">本站</span><span class="idx"></span></div>
+      <!-- ✏️【改这里】本站信息 -->
+      <dl class="readout">
+        <div><dt>版本</dt><dd>v3.5</dd></div>
+        <div><dt>上线</dt><dd>2026.10.21</dd></div>
+        <div><dt>托管</dt><dd>GitHub Pages</dd></div>
+      </dl>
+    </section>
+
+  </aside>
+
+  <!-- ---------- 中栏 ---------- -->
+  <div class="col-mid">
+
+    <section class="panel quote">
+      <!-- ✏️【改这里】一句你自己的话 -->
+      <p class="quote-text">把每个小工具真正做出来，才算真的想过一遍。</p>
+      <div class="quote-foot">
+        <span class="mono">2026.10.21</span>
+        <span class="mono dim">/ NOTE-001</span>
       </div>
-    </div>
-  </section>
+    </section>
+
+    <section class="panel" id="updates">
+      <div class="panel-head"><span>UPDATES</span><span class="zh">更新记录</span><span class="idx"></span></div>
+      <!-- ✏️【改这里】每条 = 日期 + 分类 + 标题。复制一行 <li> 就能加一条 -->
+      <ul class="updates">
+        <li>
+          <span class="date">261021</span>
+          <span class="tag">日常</span>
+          <span class="title">个人站正式上线，托管在 GitHub Pages</span>
+        </li>
+        <li>
+          <span class="date">261021</span>
+          <span class="tag">技术</span>
+          <span class="title">三栏布局用 CSS Grid 实现，窄屏自动折成两栏</span>
+        </li>
+        <li>
+          <span class="date">261021</span>
+          <span class="tag">技术</span>
+          <span class="title">部署踩坑：安装工具被系统沙箱拦截，改用二进制</span>
+        </li>
+        <li>
+          <span class="date">261018</span>
+          <span class="tag">日常</span>
+          <span class="title">开始整理以前写的页面，准备陆续搬上来</span>
+        </li>
+        <li>
+          <span class="date">261012</span>
+          <span class="tag">记录</span>
+          <span class="title">把地形测绘的交互从二维改成可旋转的三维投影</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="panel" id="gallery">
+      <div class="panel-head"><span>GALLERY</span><span class="zh">作品集</span><span class="idx"></span></div>
+      <!-- ✏️【改这里】每格作品：改编号、名字、类型、年份、链接 -->
+      <div class="gallery">
+        <a class="shot shot-a" data-idx="01" href="#" target="_blank" rel="noopener">
+          <span class="shot-idx">01</span>
+          <span class="shot-name">个人主页</span>
+          <span class="shot-meta">HTML / CSS · 2026</span>
+          <span class="shot-go">VIEW →</span>
+        </a>
+        <a class="shot shot-b" data-idx="02" href="#" target="_blank" rel="noopener">
+          <span class="shot-idx">02</span>
+          <span class="shot-name">地形测绘</span>
+          <span class="shot-meta">THREE.JS · 2026</span>
+          <span class="shot-go">VIEW →</span>
+        </a>
+        <a class="shot shot-c" data-idx="03" href="#" target="_blank" rel="noopener">
+          <span class="shot-idx">03</span>
+          <span class="shot-name">装甲坦克</span>
+          <span class="shot-meta">CANVAS · 2026</span>
+          <span class="shot-go">VIEW →</span>
+        </a>
+        <a class="shot shot-d" data-idx="04" href="#" target="_blank" rel="noopener">
+          <span class="shot-idx">04</span>
+          <span class="shot-name">待补充</span>
+          <span class="shot-meta">—</span>
+          <span class="shot-go">VIEW →</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ---------- 右栏 ---------- -->
+  <aside class="col-right">
+
+    <section class="panel">
+      <div class="panel-head"><span>MANIFEST</span><span class="zh">档案</span><span class="idx"></span></div>
+      <!-- ✏️【改这里】右侧档案读数 -->
+      <dl class="readout">
+        <div><dt>坐标</dt><dd>杭州 / HANGZHOU</dd></div>
+        <div><dt>方向</dt><dd>前端 · 独立开发</dd></div>
+        <div><dt>开始</dt><dd>2019</dd></div>
+        <div><dt>状态</dt><dd><i class="live"></i>开放远程合作</dd></div>
+      </dl>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><span>SKILLS</span><span class="zh">能力</span><span class="idx"></span></div>
+      <!-- ✏️【改这里】技能条：改名字、数字，以及 --w 的百分比 -->
+      <div class="bars">
+        <div class="bar"><span class="bar-name">HTML / CSS</span><span class="bar-val">85%</span><i style="--w:85%"></i></div>
+        <div class="bar"><span class="bar-name">JavaScript</span><span class="bar-val">70%</span><i style="--w:70%"></i></div>
+        <div class="bar"><span class="bar-name">Three.js</span><span class="bar-val">45%</span><i style="--w:45%"></i></div>
+        <div class="bar"><span class="bar-name">设计</span><span class="bar-val">60%</span><i style="--w:60%"></i></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><span>NOW</span><span class="zh">最近</span><span class="idx"></span></div>
+      <!-- ✏️【改这里】进行中的事：class="done" 表示已勾上 -->
+      <ul class="now">
+        <li class="done"><span class="box"></span>把主页重做成三栏布局</li>
+        <li class="done"><span class="box"></span>绑定自己的域名</li>
+        <li><span class="box"></span>整理旧作品，逐个搬上来</li>
+        <li><span class="box"></span>学 WebGL 着色器</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><span>TOOLS</span><span class="zh">常用</span><span class="idx"></span></div>
+      <!-- ✏️【改这里】常用工具清单 -->
+      <ul class="tools">
+        <li><span class="mono dim">ED</span>VS Code</li>
+        <li><span class="mono dim">DS</span>Figma</li>
+        <li><span class="mono dim">VC</span>Git</li>
+        <li><span class="mono dim">SH</span>Terminal</li>
+      </ul>
+    </section>
+
+  </aside>
 
 </main>
 
-<footer class="footer">
-  <div class="wrap footer-inner">
-    <!-- ✏️【改这里】页脚的名字 -->
-    <span>© <span id="year">2026</span> 陈亦然</span>
-    <span class="footer-meta">Built with plain HTML · Hosted on GitHub Pages</span>
+<!-- ================= 页脚 ================= -->
+<footer class="footer" id="contact">
+  <div class="footer-left">
+    <!-- ✏️【改这里】页脚名字 -->
+    <strong>© 2026 江虎</strong>
+    <span class="mono dim">BUILT WITH PLAIN HTML · HOSTED ON GITHUB PAGES</span>
+  </div>
+  <div class="footer-right">
+    <a href="mailto:hi@example.com" class="mono">hi@example.com</a>
+    <a href="#top" class="mono dim">回到顶部 ↑</a>
   </div>
 </footer>
 
