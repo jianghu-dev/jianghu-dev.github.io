@@ -1521,3 +1521,14 @@ html.boot-off .contact-card {
 }
 .lock-open:hover { opacity: .86; }
 .lock-open + .lock-close { margin-top: 8px; }
+
+/* 标签：红字 */
+.tags span {
+  color: #ff5c5c;
+  border-color: rgba(255, 92, 92, .32);
+}
+.tags span:hover {
+  background: #ff5c5c;
+  border-color: #ff5c5c;
+  color: #0a0a0a;
+}
