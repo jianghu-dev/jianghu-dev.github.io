@@ -171,11 +171,15 @@ gh auth login --hostname github.com --git-protocol https --web
 
 | 变量        | 作用     | 默认值                     |
 | --------- | ------ | ----------------------- |
-| `--bg`    | 页面底色   | `#0a0a0a`               |
-| `--ink`   | 主墨色（文字、实心块） | `#f9fafb`               |
-| `--panel` | 卡片底色   | `rgba(22,22,22,.88)`    |
-| `--max`   | 内容最大宽度 | `1240px`                |
-| `--gap`   | 卡片间距   | `14px`                  |
+| `--bg`    | 页面底色   | `#08090a`               |
+| `--ink`   | 主墨色（文字、实心块） | `#f7f7f8`               |
+| `--panel` | 卡片底色   | `rgba(15,16,19,.93)`    |
+| `--max`   | 内容最大宽度 | `1280px`                |
+| `--gap`   | 卡片间距   | `16px`                  |
+| `--red`   | 唯一强调色（标签、锁定） | `#ff5a4f`             |
+
+UI 参照 Vercel 开源的 Geist 设计系统：发丝线 + 阴影当边框、负字距、圆角 6/8/12。  
+换强调色只改 `--red` / `--red-soft` / `--red-line` 三个值。
 
 **三栏宽度**在 `.layout` 的 `grid-template-columns`；**作品网格**在 `.work-grid`。  
 **网格底纹**密度在 `.bg-grid` 的 `background-size`。  

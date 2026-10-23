@@ -50,9 +50,11 @@
       entries.forEach(function (entry) {
         if (!entry.isIntersecting) return;
         var el = entry.target;
-        el.style.transitionDelay = Math.min(seq++, 6) * 60 + 'ms';
-        el.classList.add('in');
+        var delay = Math.min(seq++, 6) * 60;
         io.unobserve(el);
+        /* 用延时加 class 来错开，而不是写 transition-delay。
+           写 transition-delay 会一直留在元素上，之后 hover 的倾斜也会被拖住。 */
+        setTimeout(function () { el.classList.add('in'); }, delay);
       });
     }, { rootMargin: '0px 0px -6% 0px', threshold: 0.06 });
 
@@ -153,7 +155,7 @@
     bootReady = true;
     var el = document.createElement('div');
     el.className = 'boot-ready';
-    el.innerHTML = '<span class="k">ENTER</span> 按回车进入站点';
+    el.innerHTML = '<span class="k">ENTER</span> PRESS TO CONTINUE';
     boot.appendChild(el);
   }
 
@@ -163,10 +165,15 @@
     finishBoot(false);
   }
 
+  /* 本次会话已经进过站就不再播启动动画：
+     1) 从站内其它页面点过来（referrer 同源）直接跳过；
+     2) 同标签页里已经按过回车（sessionStorage）也不再重播。
+     以前只判断 referrer，在预览器/新窗口里每次点“主页”都会重播一遍。 */
   var bootSeen = false;
   try {
     var _r = document.referrer || '';
-    bootSeen = !!_r && _r.indexOf(location.host) !== -1;
+    bootSeen = (!!_r && _r.indexOf(location.host) !== -1) ||
+               sessionStorage.getItem('boot-seen') === '1';
   } catch (e) {}
 
   if (!boot || reduce || bootSeen) {
@@ -326,6 +333,222 @@
       root.classList.remove('cursor-in');
     });
   }
+
+  /* ================= 作品卡等高线贴图 =================
+     用和背景同一套 marching squares 生成一张静态等高线 PNG，
+     存进 CSS 变量 --contour-img，作品卡悬停时铺上去。 */
+  (function contourTexture() {
+    var cards = [].slice.call(
+      document.querySelectorAll('.panel, .work-card, .contact-card')
+    );
+    if (!cards.length) return;
+
+    var w = 760, h = 520;
+    var c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    var g = c.getContext('2d');
+    if (!g) return;
+
+    var cell = 20;
+    var cols = Math.ceil(w / cell) + 1;
+    var rows = Math.ceil(h / cell) + 1;
+    var f = new Float32Array(cols * rows);
+
+    function hs(a, b) {
+      var n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+      return n - Math.floor(n);
+    }
+    function sm(t) { return t * t * (3 - 2 * t); }
+    function nz(a, b) {
+      var ai = Math.floor(a), bi = Math.floor(b);
+      var af = a - ai, bf = b - bi;
+      var u = sm(af), v = sm(bf);
+      var p = hs(ai, bi), q = hs(ai + 1, bi);
+      var r = hs(ai, bi + 1), s = hs(ai + 1, bi + 1);
+      var pq = p + (q - p) * u, rs = r + (s - r) * u;
+      return pq + (rs - pq) * v;
+    }
+    function fb(a, b) {
+      return 0.66 * nz(a, b) + 0.34 * nz(a * 2.1 + 7.3, b * 2.1 + 1.7);
+    }
+
+    for (var j = 0; j < rows; j++) {
+      for (var i = 0; i < cols; i++) {
+        f[j * cols + i] = fb(i * cell / 200, j * cell / 200);
+      }
+    }
+
+    var CASES = [
+      [], [[3, 0]], [[0, 1]], [[3, 1]],
+      [[1, 2]], [[3, 0], [1, 2]], [[0, 2]], [[3, 2]],
+      [[2, 3]], [[2, 0]], [[0, 1], [2, 3]], [[2, 1]],
+      [[1, 3]], [[1, 0]], [[0, 3]], []
+    ];
+
+    function lp(a, b, t) { return a + (b - a) * t; }
+
+    function edge(id, x0, y0, x1, y1, v0, v1, v2, v3, L) {
+      var t;
+      if (id === 0) {
+        if (v1 === v0) return null;
+        t = (L - v0) / (v1 - v0);
+        return [lp(x0, x1, t), y0];
+      }
+      if (id === 1) {
+        if (v2 === v1) return null;
+        t = (L - v1) / (v2 - v1);
+        return [x1, lp(y0, y1, t)];
+      }
+      if (id === 2) {
+        if (v2 === v3) return null;
+        t = (L - v3) / (v2 - v3);
+        return [lp(x0, x1, t), y1];
+      }
+      if (v3 === v0) return null;
+      t = (L - v0) / (v3 - v0);
+      return [x0, lp(y0, y1, t)];
+    }
+
+    g.strokeStyle = 'rgba(255, 255, 255, 0.34)';
+    g.lineWidth = 1;
+    g.lineCap = 'round';
+
+    for (var k = 0; k < 6; k++) {
+      var L = 0.38 + k * 0.045;
+      g.beginPath();
+      for (var jj = 0; jj < rows - 1; jj++) {
+        for (var ii = 0; ii < cols - 1; ii++) {
+          var v0 = f[jj * cols + ii];
+          var v1 = f[jj * cols + ii + 1];
+          var v2 = f[(jj + 1) * cols + ii + 1];
+          var v3 = f[(jj + 1) * cols + ii];
+          var idx = (v0 > L ? 1 : 0) | (v1 > L ? 2 : 0) |
+                    (v2 > L ? 4 : 0) | (v3 > L ? 8 : 0);
+          var seg = CASES[idx];
+          if (!seg.length) continue;
+          var x0 = ii * cell, y0 = jj * cell;
+          var x1 = x0 + cell, y1 = y0 + cell;
+          for (var s = 0; s < seg.length; s++) {
+            var A = edge(seg[s][0], x0, y0, x1, y1, v0, v1, v2, v3, L);
+            var B = edge(seg[s][1], x0, y0, x1, y1, v0, v1, v2, v3, L);
+            if (!A || !B) continue;
+            g.moveTo(A[0], A[1]);
+            g.lineTo(B[0], B[1]);
+          }
+        }
+      }
+      g.stroke();
+    }
+
+    try {
+      document.documentElement.style.setProperty(
+        '--contour-img', 'url(' + c.toDataURL('image/png') + ')'
+      );
+    } catch (e) {}
+
+    /* 每个方块都塞一层纹理 */
+    cards.forEach(function (el) {
+      var d = document.createElement('div');
+      d.className = 'tex';
+      d.setAttribute('aria-hidden', 'true');
+      el.insertBefore(d, el.firstChild);
+    });
+  })();
+
+  /* ================= 指针特效 =================
+     1. 卡片聚光：柔光跟着鼠标走
+     2. 图标磁吸：图标朝光标挪几像素
+     3. 顶部大图：轻微视差（放大交给 CSS hover）
+     4. 作品卡：跟着光标 3D 倾斜 + 等高线纹理视差
+     全部只在有精确指针的设备上启用。 */
+  (function pointerFX() {
+    if (reduce) return;
+    if (!window.matchMedia('(pointer: fine)').matches) return;
+
+    /* 1. 聚光 */
+    Array.prototype.forEach.call(
+      document.querySelectorAll('.panel, .work-card, .contact-card'),
+      function (el) {
+        var raf = null, mx = 0, my = 0;
+        el.addEventListener('pointermove', function (e) {
+          var r = el.getBoundingClientRect();
+          mx = e.clientX - r.left;
+          my = e.clientY - r.top;
+          if (raf) return;
+          raf = requestAnimationFrame(function () {
+            raf = null;
+            el.style.setProperty('--mx', mx + 'px');
+            el.style.setProperty('--my', my + 'px');
+          });
+        }, { passive: true });
+      }
+    );
+
+    /* 2. 图标磁吸 */
+    Array.prototype.forEach.call(
+      document.querySelectorAll('.link-grid a svg, .contact-card svg'),
+      function (svg) {
+        var host = svg.parentNode;
+        host.addEventListener('pointermove', function (e) {
+          var r = host.getBoundingClientRect();
+          var dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2 || 1);
+          var dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2 || 1);
+          svg.style.transform = 'translate(' +
+            (dx * 3).toFixed(2) + 'px,' + (dy * 3).toFixed(2) + 'px)';
+        }, { passive: true });
+        host.addEventListener('pointerleave', function () {
+          svg.style.transform = '';
+        });
+      }
+    );
+
+    /* 3. 大图视差 */
+    var banner = document.querySelector('.banner');
+    if (banner) {
+      banner.addEventListener('pointermove', function (e) {
+        var r = banner.getBoundingClientRect();
+        var dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+        var dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+        banner.style.setProperty('--bx', (dx * 10).toFixed(2) + 'px');
+        banner.style.setProperty('--by', (dy * 6).toFixed(2) + 'px');
+      }, { passive: true });
+      banner.addEventListener('pointerleave', function () {
+        banner.style.setProperty('--bx', '0px');
+        banner.style.setProperty('--by', '0px');
+      });
+    }
+
+    /* 4. 所有方块：3D 倾斜 + 等高线纹理视差
+       注意：方块本身带 transform，getBoundingClientRect 会随旋转变大，
+       拿它算比例会“自我抵消”，越靠近边缘越不跟手。
+       所以用 offsetWidth/Height（不受 transform 影响）做归一化，
+       中心点用 rect 的中心（绕中心旋转，中心不变）。 */
+    Array.prototype.forEach.call(
+      document.querySelectorAll('.panel, .work-card, .contact-card'),
+      function (card) {
+        card.addEventListener('pointermove', function (e) {
+          var r = card.getBoundingClientRect();
+          var w = card.offsetWidth || 1;
+          var h = card.offsetHeight || 1;
+          var dx = (e.clientX - (r.left + r.width / 2)) / (w / 2);
+          var dy = (e.clientY - (r.top + r.height / 2)) / (h / 2);
+          dx = Math.max(-1, Math.min(1, dx));
+          dy = Math.max(-1, Math.min(1, dy));
+          card.style.setProperty('--ry', (dx * 15).toFixed(2) + 'deg');
+          card.style.setProperty('--rx', (-dy * 15).toFixed(2) + 'deg');
+          card.style.setProperty('--cx', (dx * 14).toFixed(1) + 'px');
+          card.style.setProperty('--cy', (dy * 10).toFixed(1) + 'px');
+        }, { passive: true });
+        card.addEventListener('pointerleave', function () {
+          card.style.setProperty('--rx', '0deg');
+          card.style.setProperty('--ry', '0deg');
+          card.style.setProperty('--cx', '0px');
+          card.style.setProperty('--cy', '0px');
+        });
+      }
+    );
+  })();
 
   /* ================= 导航高亮 ================= */
   var here = location.pathname.split('/').pop();

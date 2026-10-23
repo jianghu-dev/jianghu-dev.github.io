@@ -1,6 +1,13 @@
-/* 动态等高线背景
-   值噪声高度场 + marching squares 等值线，缓慢演化。
-   零依赖，单 canvas，页面不可见时自动暂停。 */
+/* 动态等高线背景 · 缓慢流动的地形图
+   ------------------------------------------------------------
+   做法：值噪声 fbm + 三个八度各自不同方向的漂移 + marching squares。
+   刻意去掉任何“随时间变化的缩放/位移抖动”——原来那句
+   `NOISE_SCALE * (1 + 0.05 * sin(t))` 会让整片地形周期性拉伸，
+   看起来就是一跳一跳的。现在只让地形整体极慢地流动：
+   线条只会平移、缓慢收放，不会跳。
+
+   零依赖，单 canvas，页面不可见时自动暂停。
+   ------------------------------------------------------------ */
 
 (function () {
   'use strict';
@@ -14,45 +21,59 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-  var W = 0, H = 0, cell = 22, cols = 0, rows = 0;
+  var W = 0, H = 0;
+  var cell = 20;
+  var cols = 0, rows = 0;
   var field = null;
-  var clock = 0;
+  var clock = 0;          // 秒
   var raf = null;
   var running = true;
+  var lastTs = 0;
 
-  var LEVELS = 5;
-  var STEP = 0.075;
-  var BASE = 0.24;
-  var NOISE_SCALE = 1 / 220;
+  /* 等值线层数 / 取值范围 / 噪声尺度 */
+  var LEVELS = 6;
+  var BASE = 0.385;
+  var STEP = 0.042;
+  var SCALE = 1 / 300;
 
-  function hash(x, y, z) {
-    var n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
+  /* 三个八度：振幅、频率、各自的漂移速度（噪声单位/秒）
+     方向不同，叠起来像地形在缓慢翻涌，而不是整块平移 */
+  var OCTAVES = [
+    { amp: 0.60, freq: 1.00, vx: 0.026, vy: 0.016 },
+    { amp: 0.28, freq: 2.03, vx: -0.019, vy: 0.023 },
+    { amp: 0.12, freq: 4.10, vx: 0.013, vy: -0.017 }
+  ];
+
+  function hash(x, y) {
+    var n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
     return n - Math.floor(n);
   }
 
   function smoothStep(t) { return t * t * (3 - 2 * t); }
 
-  function noise2(x, y, z) {
+  function noise2(x, y) {
     var xi = Math.floor(x), yi = Math.floor(y);
     var xf = x - xi, yf = y - yi;
     var u = smoothStep(xf), v = smoothStep(yf);
-    var a = hash(xi, yi, z);
-    var b = hash(xi + 1, yi, z);
-    var c = hash(xi, yi + 1, z);
-    var d = hash(xi + 1, yi + 1, z);
+    var a = hash(xi, yi);
+    var b = hash(xi + 1, yi);
+    var c = hash(xi, yi + 1);
+    var d = hash(xi + 1, yi + 1);
     var ab = a + (b - a) * u;
     var cd = c + (d - c) * u;
     return ab + (cd - ab) * v;
   }
 
-  function fbm(x, y, z) {
-    var v = 0, amp = 0.58, freq = 1;
-    for (var i = 0; i < 2; i++) {
-      v += noise2(x * freq, y * freq, z + i * 13.7) * amp;
-      freq *= 2.05;
-      amp *= 0.5;
+  function fbm(x, y, time) {
+    var sum = 0;
+    for (var i = 0; i < OCTAVES.length; i++) {
+      var o = OCTAVES[i];
+      sum += o.amp * noise2(
+        x * o.freq + time * o.vx,
+        y * o.freq + time * o.vy
+      );
     }
-    return v;
+    return sum;
   }
 
   function resize() {
@@ -64,11 +85,12 @@
     canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    cell = W < 760 ? 26 : 16;
+    cell = W < 760 ? 26 : 20;
     cols = Math.ceil(W / cell) + 2;
     rows = Math.ceil(H / cell) + 2;
     field = new Float32Array(cols * rows);
-    draw(true);
+
+    draw();
   }
 
   /* 边编号：0 上、1 右、2 下、3 左 */
@@ -81,31 +103,28 @@
 
   function lerp(a, b, t) { return a + (b - a) * t; }
 
-  function draw(staticFrame) {
+  function draw() {
     ctx.clearRect(0, 0, W, H);
 
     var t = clock;
-    var sc = NOISE_SCALE * (1 + 0.05 * Math.sin(t * 0.35));
+    var step = SCALE;
+
     for (var j = 0; j < rows; j++) {
-      var yPart = j * cell * NOISE_SCALE;
+      var wy = j * cell * step;
       for (var i = 0; i < cols; i++) {
-        field[j * cols + i] = fbm(
-          i * cell * sc + t * 0.12,
-          yPart * 1.0 + t * 0.06,
-          t * 0.5
-        );
+        field[j * cols + i] = fbm(i * cell * step, wy, t);
       }
     }
 
     ctx.lineWidth = 1;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = staticFrame
-      ? 'rgba(255, 255, 255, 0.12)'
-      : 'rgba(255, 255, 255, 0.125)';
 
     for (var k = 0; k < LEVELS; k++) {
       var level = BASE + k * STEP;
+      /* 靠内的线略亮一点，地形有层次但不抢戏 */
+      var a = 0.075 + 0.045 * (k / (LEVELS - 1));
+      ctx.strokeStyle = 'rgba(255, 255, 255, ' + a.toFixed(3) + ')';
       ctx.beginPath();
       march(level);
       ctx.stroke();
@@ -113,7 +132,7 @@
   }
 
   function march(level) {
-    var idx, pts, seg, a, b, x0, y0, x1, y1;
+    var idx, seg, a, b, x0, y0, x1, y1;
     var v0, v1, v2, v3;
 
     for (var j = 0; j < rows - 1; j++) {
@@ -166,16 +185,15 @@
     return [x0, lerp(y0, y1, t)];
   }
 
-  var lastTs = 0;
-
   function loop(ts) {
     raf = null;
     if (!lastTs) lastTs = ts;
     var dt = ts - lastTs;
     lastTs = ts;
-    if (dt > 60) dt = 60;
-    clock += dt * 0.00005;
-    draw(false);
+    if (dt > 64) dt = 64;
+    /* 每秒推进一点：漂移速度由 OCTAVES 里的 vx/vy 决定 */
+    clock += dt / 1000;
+    draw();
     if (running) raf = requestAnimationFrame(loop);
   }
 
@@ -207,7 +225,5 @@
 
   resize();
 
-  if (!reduce) {
-    start();
-  }
+  if (!reduce) start();
 })();
