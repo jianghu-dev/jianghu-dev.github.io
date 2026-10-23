@@ -523,11 +523,42 @@
        注意：方块本身带 transform，getBoundingClientRect 会随旋转变大，
        拿它算比例会“自我抵消”，越靠近边缘越不跟手。
        所以用 offsetWidth/Height（不受 transform 影响）做归一化，
-       中心点用 rect 的中心（绕中心旋转，中心不变）。 */
+       中心点用 rect 的中心（绕中心旋转，中心不变）。
+
+       边缘跳动的成因：卡片一转，投影轮廓会挪开，光标正好在边上时
+       会反复触发 pointerleave / pointerenter，卡片就在“回正—再倾”之间抖。
+       所以离开时先看光标是否还在卡片的“未旋转矩形”里，在就不回正。 */
+    var tilted = [];
+
+    function resetCard(card) {
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+      card.style.setProperty('--cx', '0px');
+      card.style.setProperty('--cy', '0px');
+      var i = tilted.indexOf(card);
+      if (i !== -1) tilted.splice(i, 1);
+    }
+
+    /* 未受 transform 影响的布局矩形 */
+    function layoutBox(el) {
+      var p = el.offsetParent || document.body;
+      var pr = p.getBoundingClientRect();
+      var left = pr.left + p.clientLeft + el.offsetLeft;
+      var top = pr.top + p.clientTop + el.offsetTop;
+      return { left: left, top: top, right: left + el.offsetWidth, bottom: top + el.offsetHeight };
+    }
+
+    function inBox(b, x, y, pad) {
+      return x >= b.left - pad && x <= b.right + pad &&
+             y >= b.top - pad && y <= b.bottom + pad;
+    }
+
     Array.prototype.forEach.call(
       document.querySelectorAll('.panel, .work-card, .contact-card'),
       function (card) {
         card.addEventListener('pointermove', function (e) {
+          if (tilted.indexOf(card) === -1) tilted.push(card);
+
           var r = card.getBoundingClientRect();
           var w = card.offsetWidth || 1;
           var h = card.offsetHeight || 1;
@@ -540,14 +571,23 @@
           card.style.setProperty('--cx', (dx * 14).toFixed(1) + 'px');
           card.style.setProperty('--cy', (dy * 10).toFixed(1) + 'px');
         }, { passive: true });
-        card.addEventListener('pointerleave', function () {
-          card.style.setProperty('--rx', '0deg');
-          card.style.setProperty('--ry', '0deg');
-          card.style.setProperty('--cx', '0px');
-          card.style.setProperty('--cy', '0px');
-        });
+
+        card.addEventListener('pointerleave', function (e) {
+          /* 旋转会让投影轮廓挪开，光标可能已经不在卡片上但还在原矩形里；
+             这种情况先不回正，等光标真正离开矩形再收 */
+          if (inBox(layoutBox(card), e.clientX, e.clientY, 1)) return;
+          resetCard(card);
+        }, { passive: true });
       }
     );
+
+    /* 光标走远时，把所有还停在倾斜状态的卡片收回来 */
+    window.addEventListener('pointermove', function (e) {
+      if (!tilted.length) return;
+      for (var i = tilted.length - 1; i >= 0; i--) {
+        if (!inBox(layoutBox(tilted[i]), e.clientX, e.clientY, 1)) resetCard(tilted[i]);
+      }
+    }, { passive: true });
   })();
 
   /* ================= 导航高亮 ================= */
